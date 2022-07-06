@@ -3,6 +3,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Slider from '@mui/material/Slider';
 import DialogContent from '@mui/material/DialogContent';
 import { SettingsContext } from 'pages/AntMedia';
 import { AntmediaContext } from "App";
@@ -116,8 +117,37 @@ export function LayoutSettingsDialog(props) {
             </FormControl>
           </Grid>
         </Box>
-        <button onClick={() => handleChange(2)}>set max video to 2</button>
-        <button onClick={() => handleChange(3)}>set max video to 3</button>
+        <Grid>
+        <Slider
+            aria-label="video track count"
+            defaultValue={3}
+            step={null}
+            min={3}
+            max={12}
+            marks={[
+              {
+                value: 3,
+                label: '3',
+              },
+              {
+                value: 6,
+                label: '6',
+              },
+              {
+                value: 9,
+                label: '9',
+              },
+              {
+                value: 12,
+                label: '12',
+              },
+            ]}
+            onChange={(e) => {
+              console.log('e: ', e.target.value);
+              //antmedia.handleSetMaxVideoTrackCount(e.target.value);
+            }}
+          />
+        </Grid>
       </DialogContent>
     </Dialog>
   );
