@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, {useContext, useState} from "react";
 
 import { Typography } from "@mui/material";
-import {AntmediaContext} from "../../../App";
+import { ConferenceContext } from "pages/AntMedia";
 
 function TimeZone(props) {
-  const antmedia = React.useContext(AntmediaContext);
+  const conference = useContext(ConferenceContext);
 
   let time = new Date().toLocaleTimeString([], {
     hour: "2-digit",
@@ -21,7 +21,7 @@ function TimeZone(props) {
   setInterval(checkTime, 1000);
   return (
       <div>
-        {antmedia.isBroadcasting === true ? (
+        {conference.isBroadcasting === true ? (
         <Typography color="#FF0000" variant="h6">
           Live
         </Typography>) : null}

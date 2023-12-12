@@ -62,27 +62,27 @@ function ParticipantTab(props) {
               <SvgIcon size={28} name="pin" color="black" />
             </PinBtn>
           )}
-          {(videoId === "localVideo" ? presenters.includes(mediaSettings.myLocalData?.streamId) : presenters.includes(videoId) )&& antmedia.admin === true ? (
+          {(assignedVideoCardId === "localVideo" ? conference.presenters.includes(conference.publishStreamId) : conference.presenters.includes(assignedVideoCardId) )&& conference.admin === true ? (
               <PinBtn
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-                  onClick={() => makeParticipantUndoPresenter(videoId)}
+                  onClick={() => conference.makeParticipantUndoPresenter(assignedVideoCardId)}
               >
                 <SvgIcon size={28} name="unpresenter" color="black" />
               </PinBtn>
           ) : null}
-          {(videoId === "localVideo" ? !presenters.includes(mediaSettings.myLocalData?.streamId) : !presenters.includes(videoId) ) && ( !approvedSpeakerRequestList.includes(videoId) ) && antmedia.admin === true ?(
+          {(assignedVideoCardId === "localVideo" ? !conference.presenters.includes(conference.publishStreamId) : !conference.presenters.includes(assignedVideoCardId) ) && ( !conference.approvedSpeakerRequestList.includes(assignedVideoCardId) ) && conference.admin === true ?(
               <PinBtn
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-                  onClick={() => makeParticipantPresenter(videoId)}
+                  onClick={() => conference.makeParticipantPresenter(assignedVideoCardId)}
               >
                 {/* this icon for publish speaker */}
                 <SvgIcon size={28} name="presenter" color="black" />
               </PinBtn>
           ) : null}
-          {approvedSpeakerRequestList.includes(videoId) && antmedia.admin === true  && videoId !== 'localVideo' ?(
+          {conference.approvedSpeakerRequestList.includes(assignedVideoCardId) && conference.admin === true  && assignedVideoCardId !== 'localVideo' ?(
               <PinBtn
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-                  onClick={() => makeListenerAgain(videoId)}
+                  onClick={() => conference.makeListenerAgain(assignedVideoCardId)}
               >
                 <SvgIcon size={28} name="close" color="black" />
               </PinBtn>
@@ -104,7 +104,7 @@ function ParticipantTab(props) {
                 {Object.keys(conference.allParticipants).length}
               </ParticipantName>
             </Grid>
-            {conference.isPlayOnly === false ? getParticipantItem("localVideo", "You") : ""}
+            {conference.isListener === false ? getParticipantItem("localVideo", "You") : ""}
             {Object.entries(conference.allParticipants).map(([streamId, broadcastObject]) => {
               if (conference.publishStreamId !== streamId) {
                 var assignedVideoCardId = conference.participants.find(p => p.streamId === streamId)?.id;

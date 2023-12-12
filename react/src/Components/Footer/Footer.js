@@ -17,6 +17,7 @@ import { useParams } from "react-router-dom";
 import PublisherRequestListButton from "./Components/PublisherRequestListButton";
 import { ConferenceContext } from 'pages/AntMedia';
 import { getRoomNameAttribute } from 'utils';
+import ReactionsButton from "./Components/ReactionsButton";
 
 const CustomizedGrid = styled(Grid)(({ theme }) => ({
   backgroundColor: theme.palette.green[80],
@@ -29,6 +30,7 @@ const CustomizedGrid = styled(Grid)(({ theme }) => ({
   height: 80,
 }));
 function Footer(props) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
     const conference = React.useContext(ConferenceContext);
 
@@ -56,19 +58,19 @@ function Footer(props) {
                     <OptionButton footer/>
                   </Grid>
 
-                  {conference.isPlayOnly === false ?
+                  {conference.isListener === false ?
                   <Grid item xs={0}>
                     <CameraButton {...props} footer/>
                   </Grid>
                     : null}
 
-                  {conference.isPlayOnly === false ?
+                  {conference.isListener === false ?
                   <Grid item xs={0}>
                     <MicButton footer/>
                   </Grid>
                       : null}
 
-                  {conference.isPlayOnly === false ?
+                  {conference.isListener === false ?
                   <Grid item xs={0}>
                     {" "}
                     <ShareScreenButton footer/>
@@ -79,6 +81,7 @@ function Footer(props) {
                     <ReactionsButton footer/>
                   </Grid>
 
+                  {conference.isListener === false ?
                   <Grid item xs={0}>
                       <ParticipantListButton footer />
                   </Grid>
@@ -90,7 +93,7 @@ function Footer(props) {
                     </Grid>
                       : null}
 
-                  {conference.onlyDataChannel !== false ?
+                  {conference.isListener !== false ?
                       <Grid item xs={0}>
                         <RequestPublishButton footer/>
                       </Grid>

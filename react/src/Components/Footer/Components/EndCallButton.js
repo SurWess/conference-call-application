@@ -1,11 +1,11 @@
 import React, { useContext } from "react";
 import Button from "@mui/material/Button";
 import { SvgIcon } from "../../SvgIcon";
-// import { AntmediaContext } from "App";
-import { Tooltip } from "@mui/material";
+import {Dialog, DialogContent, DialogTitle, Tooltip} from "@mui/material";
 import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import { ConferenceContext } from "pages/AntMedia";
+import DialogActions from "@mui/material/DialogActions";
 
 const CustomizedBtn = styled(Button)(({ theme }) => ({
   '&.footer-icon-button': {
@@ -22,28 +22,20 @@ const CustomizedBtn = styled(Button)(({ theme }) => ({
   }
 }));
 
-
 function EndCallButton({ footer, ...props }) {
   const conference = useContext(ConferenceContext);
 
-
-  const webRTCAdaptor = useContext(AntmediaContext);
   const [openConfirmationDialog, setOpenConfirmationDialog] = React.useState(false);
-
-  const { leftTheRoom, setLeftTheRoom, allParticipants } = useContext(MediaSettingsContext);
-
-  const { presenters, makeListenerAgain, makeParticipantUndoPresenter, approvedSpeakerRequestList, setPresenters } = useContext(SettingsContext);
-
 
   const endCall = () =>
   {
-    if (webRTCAdaptor.admin && (presenters.length > 0 || approvedSpeakerRequestList.length > 0))
+    if (conference.admin && (conference.presenters.length > 0 || conference.approvedSpeakerRequestList.length > 0))
     {
       setOpenConfirmationDialog(true);
     }
     else
     {
-      setLeftTheRoom(true);
+      conference.setLeftTheRoom(true);
     }
   };
 
@@ -51,71 +43,33 @@ function EndCallButton({ footer, ...props }) {
     setOpenConfirmationDialog(false);
   };
 
-  function deleteFromRoom(roomName, streamId)
-  {
-      var requestOptions = {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      };
-
-      return fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName + "/subtrack?id=" + streamId, requestOptions)
-        .then((response) => response.json())
-        .then((result) =>
-        {
-          console.log("subtrack remove status: " + result.success + " streamId: " + streamId);
-          requestOptions = {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-          };
-
-          return fetch( restBaseUrl + "/rest/v2/broadcasts/conference-rooms/" + roomName + "/delete?streamId=" + streamId, requestOptions)
-          .then((response) => response.json())
-          .then( (result) => {
-            console.log("delete stream from room status: " + result.success + " streamId: " + streamId);
-          });
-
-      });
-}
-
   const handleExitAllRooms = () => {
-    //get streams from listener room
-
-    //delete streams from listener room
-
-
-    var listenerRoom = webRTCAdaptor.roomName + "listener";
-    console.log("presenters.length: " + presenters.length)
-    console.log("approved speaker list length: " + approvedSpeakerRequestList.length);
+    console.log("presenters.length: " + conference.presenters.length)
+    console.log("approved speaker list length: " + conference.approvedSpeakerRequestList.length);
     //get streams from speaker room
-    for (let presenter of presenters)
+    for (let presenter of conference.presenters)
     {
-      makeParticipantUndoPresenter(presenter)
-      console.log("presenter: " + presenter + " roomname: " + webRTCAdaptor.roomName);
+      conference.makeParticipantUndoPresenter(presenter)
+      console.log("presenter: " + presenter + " roomname: " + conference.roomName);
     }
 
-    for (let approvedSpeaker of approvedSpeakerRequestList)
+    for (let approvedSpeaker of conference.approvedSpeakerRequestList)
     {
-      makeListenerAgain(approvedSpeaker)
-      console.log("approvedSpeaker : " + approvedSpeaker + " roomname: " + webRTCAdaptor.roomName);
+      conference.makeListenerAgain(approvedSpeaker)
+      console.log("approvedSpeaker : " + approvedSpeaker + " roomname: " + conference.roomName);
     }
     //delete streams from speaker room
-    setPresenters([]);
+    conference.setPresenters([]);
     setOpenConfirmationDialog(false);
-    setLeftTheRoom(true);
-
-
+    conference.setLeftTheRoom(true);
   }
 
   const { t } = useTranslation();
-  // const exit = () => {
-  //   ahndleLeaveFromRoom();
 
-  // }
   return (
     <>
     <Tooltip title={t('Leave call')} placement="top">
-      <CustomizedBtn onClick={() => conference.setLeftTheRoom(true)} className={footer ? 'footer-icon-button' : ''} variant="contained" color="error">
-      <CustomizedBtn onClick={() => endCall() /*setLeftTheRoom(true)*/ } className={footer ? 'footer-icon-button' : ''} variant="contained" color="error">
+      <CustomizedBtn onClick={() => endCall() } className={footer ? 'footer-icon-button' : ''} variant="contained" color="error">
         <SvgIcon size={28} name={"end-call"} />
       </CustomizedBtn>
     </Tooltip>

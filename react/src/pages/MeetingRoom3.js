@@ -258,7 +258,7 @@ const MeetingRoom3 = React.memo((props) => {
                     </div>
                   </div>
               );
-            } else if (conference.isPlayOnly === false) {
+            } else if (conference.isListener === false) {
               return (
                   <div className="unpinned">
                     <div className="single-video-container " key={index}>
@@ -328,7 +328,7 @@ const MeetingRoom3 = React.memo((props) => {
           <div id="meeting-gallery" style={{height: "calc(100vh - 80px)"}}>
             {!pinLayout && ( // if not pinned layout show me first as a regular video
                 <>
-                  { conference.isPlayOnly === false ?
+                  { conference.isListener === false ?
                   <div
                       className="single-video-container not-pinned"
                       style={{

@@ -137,7 +137,7 @@ function VideoCard(props) {
   //conference?.isScreenShared means am i sharing my screen
   //conference?.screenSharedVideoId === props?.id means is someone else sharing their screen
   useEffect(() => {
-    if (isLocal && conference.isPublished && !conference.isPlayOnly) {
+    if (isLocal && conference.isPublished && !conference.isListener) {
       conference.setAudioLevelListener((value) => {
         // sounds under 0.01 are probably background noise
         if (value >= 0.01) {

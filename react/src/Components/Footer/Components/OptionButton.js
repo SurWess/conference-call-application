@@ -110,7 +110,7 @@ function OptionButton({ footer, ...props }) {
               <ListItemText>{t("Change Layout")}</ListItemText>
             </MenuItem>
 
-              {conference.isPlayOnly === false ?
+              {conference.isListener === false ?
             <MenuItem onClick={() => handleDialogOpen()}>
               <ListItemIcon>
                 <SvgIcon size={36} name={"call-settings"} color={"white"} />

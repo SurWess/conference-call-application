@@ -30,7 +30,7 @@ function CameraButton(props) {
 
   const handleOff = (e) => {
     e.stopPropagation();
-    if (conference.isPlayOnly === null) {
+    if (conference.isListener === null) {
       enqueueSnackbar({
         message: t('You need to allow camera and microphone permissions turning off your camera'),
         variant: 'info',

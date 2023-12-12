@@ -42,7 +42,7 @@ function WaitingRoom(props) {
   const { enqueueSnackbar } = useSnackbar();
 
   React.useEffect(() => {
-    if(!conference.isPlayOnly &&conference.initialized) {
+    if(!conference.isListener &&conference.initialized) {
       conference.setLocalVideo(document.getElementById("localVideo"));
     }
 
@@ -60,7 +60,7 @@ function WaitingRoom(props) {
   }
 
   function joinRoom(e) {
-    if (conference.localVideo === null && conference.isPlayOnly === false) {
+    if (conference.localVideo === null && conference.isListener === false) {
       e.preventDefault();
       enqueueSnackbar(
         {
@@ -127,7 +127,7 @@ function WaitingRoom(props) {
               alignItems={"center"}
           >
 
-            { conference.isPlayOnly === false ?
+            { conference.isListener === false ?
             <Grid item md={7} alignSelf="stretch">
               <Grid
                   container
@@ -169,7 +169,7 @@ function WaitingRoom(props) {
                   </Grid>
                 </Grid>
               </Grid>
-              <Typography align="center" color="#DDFFFC" sx={{mt: 2}}>
+              <Typography align="center" color="black" sx={{mt: 2}}>
                 {t(
                     "You can choose whether to open your camera and microphone before you get into room"
                 )}
@@ -177,11 +177,11 @@ function WaitingRoom(props) {
             </Grid>
             : null}
 
-            <Grid item md={conference.isPlayOnly === false ? 4 : 12}>
+            <Grid item md={conference.isListener === false ? 4 : 12}>
               <Grid container justifyContent={"center"}>
                 <Grid container justifyContent={"center"}>
-                  <Typography variant="h5" align="center">
-                    {t("What's your name?")}
+                  <Typography variant="h5"  color="black" align="center">
+                    {t("Welcome")}
                   </Typography>
                 </Grid>
                 <Grid
@@ -195,9 +195,7 @@ function WaitingRoom(props) {
                       fontWeight={"400"}
                       style={{fontSize: 18}}
                   >
-                    {t(
-                        "Please enter your name. This will be visible to the host and other participants."
-                    )}{" "}
+                    {" "}
                   </Typography>
                 </Grid>
 
@@ -211,12 +209,13 @@ function WaitingRoom(props) {
                         autoFocus
                         required
                         fullWidth
-                        color="primary"
                         value={conference.streamName}
                         variant="outlined"
                         onChange={(e) => conference.setStreamName(e.target.value)}
                         placeholder={t("Your name")}
+                        readOnly={true}
                         id="participant_name"
+                        inputProps={{ style: { color: "black" } }}
                     />
                   </Grid>
                   <Grid container justifyContent={"center"}>

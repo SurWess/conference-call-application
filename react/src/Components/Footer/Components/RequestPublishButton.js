@@ -1,12 +1,11 @@
 import React, { useContext } from 'react';
 import Button from '@mui/material/Button';
 import { SvgIcon } from '../../SvgIcon';
-import { AntmediaContext, restBaseUrl } from 'App';
 import { Tooltip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
-
+import { ConferenceContext} from "../../../pages/AntMedia";
 
 export const roundStyle = {
   width: { xs: 36, md: 46 },
@@ -35,11 +34,11 @@ export const CustomizedBtn = styled(Button)(({ theme }) => ({
 
 function RequestPublishButton(props) {
   const { rounded, footer } = props;
-  const antmedia = useContext(AntmediaContext);
+  const conference = useContext(ConferenceContext);
   const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
 
-  
+
   function replaceLastOccurrence(originalString, targetText, replacementText) {
     var pos = originalString.lastIndexOf(targetText);
 
@@ -53,20 +52,20 @@ function RequestPublishButton(props) {
 
   const handlePublisherRequest = (e) => {
     e.preventDefault();
-  
-    const baseUrl = restBaseUrl;
+
+    const baseUrl = conference.restBaseUrl;
     let participant = "";
-    let participants = antmedia.getAllParticipants();
+    let participants = Object.keys(conference.allParticipants);
     for (let i = 0; i < participants.length; i++) {
-      if (participants[i].streamId.endsWith("admin")) {
-        participant = replaceLastOccurrence(participants[i].streamId, "admin", "");
+      if (participants[i].endsWith("admin")) {
+        participant = replaceLastOccurrence(participants[i], "admin", "");
         break;
       }
     }
 
     let command = {
         "eventType": "REQUEST_PUBLISH",
-        "streamId": antmedia.publishStreamId,
+        "streamId": conference.publishStreamId,
     }
     const requestOptions = {
       method: 'POST',
@@ -74,11 +73,12 @@ function RequestPublishButton(props) {
       body: JSON.stringify(command)
     };
     console.log("participant id to sent request is :" + participant);
-    fetch( baseUrl+ "/rest/v2/broadcasts/" + participant + "/data", requestOptions).then((response) => { return response.json(); }).
-    then((data) => {
+
+    fetch( baseUrl+ "/rest/v2/broadcasts/" + participant + "/data", requestOptions).then((response) => { return response.json(); }) // FIXME
+        .then((data) => {
 
       if (data.success) {
-       
+
         enqueueSnackbar({
           message: t('Your request has been sent to host of the meeting'),
           variant: 'info',
@@ -86,7 +86,7 @@ function RequestPublishButton(props) {
           autoHideDuration: 1500,
         });
       }
-      else 
+      else
       {
         enqueueSnackbar({
           message: t('Your request cannot be sent because error is "' + data.message + "'"),

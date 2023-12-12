@@ -17,8 +17,9 @@ import { getUrlParameter } from "@antmedia/webrtc_adaptor";
 import { SvgIcon } from "../Components/SvgIcon";
 import ParticipantListDrawer from "../Components/ParticipantListDrawer";
 
-import { getRoomNameAttribute, getWebSocketURLAttribute } from "../utils";
+import {getRoomNameAttribute, getRootAttribute, getWebSocketURLAttribute} from "../utils";
 import floating from "../external/floating.js";
+import {useTranslation} from "react-i18next";
 
 export const ConferenceContext = React.createContext(null);
 
@@ -55,6 +56,11 @@ var scrollThreshold = -Infinity;
 var scroll_down = true;
 var last_warning_time = null;
 
+var admin = getRootAttribute("admin");
+if (!admin) {
+    admin = getUrlParameter("admin");
+}
+
 var videoQualityConstraints = {
   video: {
     width: { max: 320 },
@@ -77,6 +83,7 @@ var mediaConstraints = {
 };
 
 let websocketURL = process.env.REACT_APP_WEBSOCKET_URL;
+let restBaseUrl = process.env.REACT_APP_REST_BASE_URL;
 
 if (!websocketURL) {
 
@@ -98,7 +105,16 @@ if (!websocketURL) {
     if (window.location.protocol.startsWith("https")) {
       websocketURL = "wss://" + path;
     }
+      restBaseUrl = window.location.protocol + "//" + path;
   }
+  else {
+
+      restBaseUrl = websocketURL.replace("ws", "http");
+      //if it's wss, then it becomes https
+      restBaseUrl = restBaseUrl.replace("websocket", "");
+  }
+    //remove last slash
+    restBaseUrl = restBaseUrl.substring(0, restBaseUrl.length - 1);
 
 }
 
@@ -120,6 +136,11 @@ if (publishToken == null || typeof publishToken === "undefined") {
   publishToken = "";
 }
 
+var tokenPublishAdmin = getRootAttribute("token-publish-admin");
+if (!tokenPublishAdmin) {
+    tokenPublishAdmin = getUrlParameter("tokenPublishAdmin");
+}
+
 var roomOfStream = [];
 
 var audioListenerIntervalJob = null;
@@ -132,11 +153,10 @@ var playReconnected;
 
 function AntMedia() {
   // eslint-disable-next-line react-hooks/rules-of-hooks
+  const {t} = useTranslation();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
-  const roomName = id;
-
-  const antmediaadmin = React.useContext(AntmediaAdminContext);
-
+  var roomName = id;
 
     // drawerOpen for message components.
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
@@ -183,6 +203,8 @@ function AntMedia() {
   const [screenSharedVideoId, setScreenSharedVideoId] = useState(null);
   const [waitingOrMeetingRoom, setWaitingOrMeetingRoom] = useState("waiting");
   const [leftTheRoom, setLeftTheRoom] = useState(false);
+
+  const [isListener, setIsListener] = useState(playOnly);
 
   const [reactions] = useState({
     'sparkling_heart': '💖',
@@ -239,6 +261,7 @@ function AntMedia() {
   const [localVideo, setLocalVideoLocal] = React.useState(null);
 
   const [webRTCAdaptor, setWebRTCAdaptor] = React.useState();
+  const [webRTCAdaptorAdminOnly, setWebRTCAdaptorAdminOnly] = React.useState();
   const [initialized, setInitialized] = React.useState(false);
   const [recreateAdaptor, setRecreateAdaptor] = React.useState(true);
   const [closeScreenShare, setCloseScreenShare] = React.useState(false);
@@ -257,8 +280,8 @@ function AntMedia() {
 
     function makeParticipantPresenter(id) {
         let streamId = id;
-        if (streamId === 'localVideo' && myLocalData !== null) {
-            streamId = myLocalData?.streamId;
+        if (streamId === 'localVideo' && publishStreamId !== null) {
+            streamId = publishStreamId;
         }
 
         const baseUrl = restBaseUrl;
@@ -392,7 +415,6 @@ function AntMedia() {
 
     function changeRoomName(roomNameParam) {
         roomName = roomNameParam;
-        antmedia.roomName = roomName;
     }
 
     function addBecomingPublisherRequest(listenerName)
@@ -429,7 +451,7 @@ function AntMedia() {
     function makeParticipantUndoPresenter(id) {
         let streamId = id;
         if (streamId === 'localVideo') {
-            streamId = myLocalData?.streamId;
+            streamId = publishStreamId;
         }
 
         const baseUrl = restBaseUrl;
@@ -464,7 +486,7 @@ function AntMedia() {
                     presenters.splice(presenters.indexOf(streamId), 1);
                     var newPresenters = [...presenters];
                     setPresenters(newPresenters);
-                    antmedia.handleSendMessage("admin*listener_room*"+streamId+"*STOP_PLAYING");
+                    handleSendMessage("admin*listener_room*"+streamId+"*STOP_PLAYING");
                     let command = {
                         "eventType": "BROADCAST_OFF",
                         "streamId": streamId,
@@ -485,6 +507,71 @@ function AntMedia() {
     function turnObserverModeOn() {
         setObserverMode(true);
     }
+
+    function handleSendMessageAdmin(message) {
+        if (publishStreamId) {
+            let iceState = webRTCAdaptor.iceConnectionState(publishStreamId);
+            if (
+                iceState !== null &&
+                iceState !== "failed" &&
+                iceState !== "disconnected"
+            ) {
+                let commandList = message.split('*');
+                if (commandList.length > 3 && commandList[0] === "admin" && admin && admin === true) {
+                    if (commandList[1] === "publisher_room") {
+                        webRTCAdaptor.sendData(publishStreamId,
+                            JSON.stringify({
+                                streamId: commandList[2],
+                                eventType: commandList[3]
+                            }));
+                    } else if (commandList[1] === "listener_room") {
+                        // TODO: Move it to REST API
+                        webRTCAdaptorAdminOnly.sendData(publishStreamId + "listener",
+                            JSON.stringify({
+                                streamId: commandList[2],
+                                eventType: commandList[3]
+                            }));
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    useEffect(() => {
+        async function createWebRTCAdaptorAdminOnly() {
+            //here we check if audio or video device available and wait result
+            //according to the result we modify mediaConstraints
+            await checkDevices();
+            if (recreateAdaptor && webRTCAdaptorAdminOnly == null && admin === "true") {
+                setWebRTCAdaptorAdminOnly(new WebRTCAdaptor({
+                    websocket_url: websocketURL,
+                    mediaConstraints: mediaConstraints,
+                    onlyDataChannel: true,
+                    debug: true,
+                    callback: (info, obj) => {
+                        if (info === "data_received") {
+                            try {
+                                let notificationEvent = JSON.parse(obj.data);
+                                if (notificationEvent != null && typeof notificationEvent == "object") {
+                                    let eventStreamId = notificationEvent.streamId;
+                                    let eventType = notificationEvent.eventType;
+                                    if (eventType === "REQUEST_PUBLISH" && admin === true) {
+                                        console.log("webrtc publish request is received from attendee with streamId: " + eventStreamId);
+                                        handleSendMessageAdmin("admin*listener_room*"+eventStreamId+"*GRANT_BECOME_PUBLISHER");
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+                    },
+                    callbackError: function (error, message) {},
+                }))
+
+                setRecreateAdaptor(false);
+            }
+        }
+        createWebRTCAdaptorAdminOnly();
+    }, [recreateAdaptor]);  // eslint-disable-line react-hooks/exhaustive-deps
 
     function makeFullScreen(divId) {
     if (fullScreenId === divId) {
@@ -558,6 +645,10 @@ function AntMedia() {
   }
 
   function joinRoom(roomName, generatedStreamId, roomJoinMode) {
+        debugger;
+      if (playOnly) {
+          roomName = roomName + "listener";
+      }
     room = roomName;
     roomOfStream[generatedStreamId] = room;
 
@@ -770,6 +861,7 @@ function AntMedia() {
     else if (info === "play_started") {
       console.log("**** play started:" + reconnecting);
 
+      roomName = obj.streamId;
       webRTCAdaptor.getBroadcastObject(roomName);
 
       if (reconnecting) {
@@ -1169,60 +1261,36 @@ function AntMedia() {
     }
   }
 
-  function handleSendMessage(message) {
-    if (publishStreamId) {
-      let iceState = webRTCAdaptor.iceConnectionState(publishStreamId);
-      if (
-        iceState !== null &&
-        iceState !== "failed" &&
-        iceState !== "disconnected"
-      ) {
-          let commandList = message.split('*');
-          if (commandList.length > 3 && commandList[0] === "admin" && antmedia.admin && antmedia.admin === true) {
-              if (commandList[1] === "publisher_room") {
-                  antmedia.sendData(myLocalData.streamId,
-                      JSON.stringify({
-                          streamId: commandList[2],
-                          eventType: commandList[3]
-                      }));
-              } else if (commandList[1] === "listener_room") {
-                  antmediaadmin.sendData(myLocalData.streamId + "listener",
-                      JSON.stringify({
-                          streamId: commandList[2],
-                          eventType: commandList[3]
-                      }));
-              }
-              return;
-          } else if (commandList.length > 2 && commandList[0] === "listener" && antmedia.onlyDataChannel && antmedia.onlyDataChannel === true) {
-              antmedia.sendData(myLocalData.streamId,
-                  JSON.stringify({
-                      streamId: commandList[1],
-                      eventType: commandList[2]
-                  }));
-              return;
-          }
-        if (message === "debugme") {
-          webRTCAdaptor.getDebugInfo(publishStreamId);
-          return;
-        } else if (message === "clearme") {
-          setMessages([]);
-          return;
+    function handleSendMessage(message) {
+        if (publishStreamId) {
+            let iceState = webRTCAdaptor.iceConnectionState(publishStreamId);
+            if (
+                iceState !== null &&
+                iceState !== "failed" &&
+                iceState !== "disconnected"
+            ) {
+                if (message === "debugme") {
+                    webRTCAdaptor.getDebugInfo(publishStreamId);
+                    return;
+                } else if (message === "clearme") {
+                    setMessages([]);
+                    return;
+                }
+
+
+                webRTCAdaptor.sendData(
+                    publishStreamId,
+                    JSON.stringify({
+                        eventType: "MESSAGE_RECEIVED",
+                        message: message,
+                        name: streamName,
+                        senderId: publishStreamId,
+                        date: new Date().toString()
+                    })
+                );
+            }
         }
-
-
-        webRTCAdaptor.sendData(
-          publishStreamId,
-          JSON.stringify({
-            eventType: "MESSAGE_RECEIVED",
-            message: message,
-            name: streamName,
-            senderId: publishStreamId,
-            date: new Date().toString()
-          })
-        );
-      }
     }
-  }
 
   function handleDebugInfo(debugInfo) {
     var infoText = "Client Debug Info\n";
@@ -1550,6 +1618,10 @@ function AntMedia() {
 
     addMeAsParticipant();
 
+    if (playOnly) {
+        roomName = roomName + "listener";
+    }
+
     webRTCAdaptor.publish(
       publishStreamId,
       token,
@@ -1559,7 +1631,20 @@ function AntMedia() {
       roomName,
       JSON.stringify(userStatusMetadata)
     );
+
+    if (admin) {
+        webRTCAdaptorAdminOnly.publish(
+            publishStreamId + "admin",
+            tokenPublishAdmin,
+            subscriberId,
+            subscriberCode,
+            "Host",
+            roomName + "listener",
+            "{}" //TODO: fix this
+        );
+    }
   }
+
   function handlePlayVideo(obj) {
     let index = obj?.trackId?.substring("ARDAMSx".length);
     globals.trackEvents.push({ track: obj.track.id, event: "added" });
@@ -1861,7 +1946,18 @@ function AntMedia() {
             isMuteParticipantDialogOpen,
             setMuteParticipantDialogOpen,
             participantIdMuted,
-            setParticipantIdMuted
+            setParticipantIdMuted,
+            presenters,
+            makeListenerAgain,
+            makeParticipantUndoPresenter,
+            approvedSpeakerRequestList,
+            setPresenters,
+            restBaseUrl,
+            admin,
+            handlePublisherRequestListOpen,
+            requestSpeakerList,
+            publisherRequestListDrawerOpen,
+            isListener
           }}
         >
           <SnackbarProvider
