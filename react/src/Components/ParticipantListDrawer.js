@@ -5,28 +5,54 @@ import {  Grid,  Tabs, Tab } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import ParticipantTab from './ParticipantTab';
 import CloseDrawerButton from './DrawerButton';
+import { ConferenceContext } from 'pages/AntMedia';
+import { getRoomNameAttribute } from 'utils';
 
-const AntDrawer = styled(Drawer)(({ theme }) => ({
-  '& .MuiDrawer-root': {
-    position: 'absolute'
-  },
-  '& .MuiBackdrop-root': {
-    backgroundColor: 'transparent',
-  },
-  '& .MuiPaper-root': {
-    padding: 12,
-    backgroundColor: 'transparent',
-    position: 'absolute',
-    boxShadow: 'unset',
-    width: 360,
-    border: 'unset',
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-      padding: 0,
-      backgroundColor: theme.palette.green70,
-    },
-  },
-}));
+const getAntDrawerStyle = (theme) => {
+  if (getRoomNameAttribute()) {
+    return {
+      '& .MuiDrawer-root': {
+        position: 'absolute',
+      },
+      '& .MuiBackdrop-root': {
+        backgroundColor: 'transparent',
+      },
+      '& .MuiPaper-root': {
+        padding: 12,
+        backgroundColor: 'transparent',
+        position: 'absolute',
+        boxShadow: 'unset',
+        width: 360,
+        border: 'unset',
+        [theme.breakpoints.down('sm')]: {
+          width: '100%',
+          padding: 0,
+          backgroundColor: theme.palette.green70,
+        },
+      },
+    }
+  } else {
+    return {
+      '& .MuiBackdrop-root': {
+        backgroundColor: 'transparent',
+      },
+      '& .MuiPaper-root': {
+        padding: 12,
+        backgroundColor: 'transparent',
+        boxShadow: 'unset',
+        width: 360,
+        border: 'unset',
+        [theme.breakpoints.down('sm')]: {
+          width: '100%',
+          padding: 0,
+          backgroundColor: theme.palette.green70,
+        },
+      },
+    };
+  }
+}
+
+const AntDrawer = styled(Drawer)(({ theme }) => (getAntDrawerStyle(theme)));
 
 const ParticipantListGrid = styled(Grid)(({ theme }) => ({
   position: 'relative',
@@ -43,9 +69,8 @@ const TabGrid = styled(Grid)(({ theme }) => ({
 }));
 
 const ParticipantListDrawer = React.memo(props => {
-  const { participantListDrawerOpen = [] } = props;
   const [value, setValue] = React.useState(0);
-  const { allParticipants } = props;
+  const conference = React.useContext(ConferenceContext);
 
   const { t } = useTranslation();
 
@@ -71,7 +96,7 @@ const ParticipantListDrawer = React.memo(props => {
   }
 
   return (
-      <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={participantListDrawerOpen} variant="persistent">
+      <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={conference.participantListDrawerOpen} variant="persistent">
         <ParticipantListGrid container direction="column" style={{ flexWrap: 'nowrap', height: '100%', overflow: 'hidden' }}>
           <Grid item container justifyContent="space-between" alignItems="center">
             <Tabs
@@ -91,7 +116,7 @@ const ParticipantListDrawer = React.memo(props => {
           <Grid item container justifyContent="space-between" alignItems="center" style={{ flex: '1 1 auto', overflowY: 'hidden' }}>
             <TabPanel value={value} index={0}>
               <TabGrid container>
-                <ParticipantTab allParticipants={allParticipants} />
+                <ParticipantTab />
               </TabGrid>
             </TabPanel>
           </Grid>

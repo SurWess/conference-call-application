@@ -6,7 +6,6 @@ import {
   TextField,
   Container,
   Tooltip,
-  Modal
 } from "@mui/material";
 import VideoCard from "Components/Cards/VideoCard";
 import MicButton, {
@@ -15,65 +14,40 @@ import MicButton, {
 } from "Components/Footer/Components/MicButton";
 import CameraButton from "Components/Footer/Components/CameraButton";
 import { useParams } from "react-router-dom";
-import { AntmediaContext, AntmediaSpeedTestContext, SpeedTestObjectContext } from "App";
 import { useTranslation } from "react-i18next";
 import { SettingsDialog } from "Components/Footer/Components/SettingsDialog";
 import { SvgIcon } from "Components/SvgIcon";
 import { useSnackbar } from "notistack";
-import {MediaSettingsContext} from "./AntMedia";
-import {Box} from "@mui/system";
-import { getRoomNameAttribute ,getRootAttribute } from "../utils";
+import { ConferenceContext } from "./AntMedia";
+import { getUrlParameter } from "@antmedia/webrtc_adaptor";
+import { getRoomNameAttribute } from "utils";
 
 
+function getPublishStreamId() {
+  const dataRoomName =  document.getElementById("root").getAttribute("data-publish-stream-id");
+  return (dataRoomName) ? dataRoomName : getUrlParameter("streamId");
+}
 
 function WaitingRoom(props) {
-  const { id } = useParams();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
+  const publishStreamId = getPublishStreamId()
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectFocus, setSelectFocus] = React.useState(null);
 
-  let timer;
-  const [count, setCount] = React.useState(0);
-  const [buttonVisibility, setButtonVisibility] = React.useState({visibility: "hidden"});
+  const roomName = id;
 
-  //const roomName = id;
-  const roomName =  getRootAttribute("data-room-name");
-  const antmedia = useContext(AntmediaContext);
-  const mediaSettings = useContext(MediaSettingsContext);
-  const { roomJoinMode } = mediaSettings;
-  const antmediaSpeedTest = useContext(AntmediaSpeedTestContext);
-  const speedTestObject = useContext(SpeedTestObjectContext);
+  const conference = useContext(ConferenceContext);
   const { enqueueSnackbar } = useSnackbar();
-  const { speedTestBeforeLogin, speedTestBeforeLoginModal, setSpeedTestBeforeLoginModal, setLeftTheRoom } = React.useContext(MediaSettingsContext);
 
-  React.useEffect(() => 
-  {
-    if(!antmedia.onlyDataChannel) {
-      antmedia.mediaManager.localVideo = document.getElementById("localVideo");
-      antmedia.mediaManager.localVideo.srcObject =
-          antmedia.mediaManager.localStream;
+  React.useEffect(() => {
+    if(!conference.isPlayOnly &&conference.initialized) {
+      conference.setLocalVideo(document.getElementById("localVideo"));
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const updateCount = () => {
-    timer = !timer && setInterval(() => {
-      setCount(count + 1)
-    }, 5000)
-  };
-
-  React.useEffect(() => {
-    updateCount()
-
-    if (speedTestObject.isfinished === true) {
-      setButtonVisibility({visibility: "visible"});
-    } else {
-      setButtonVisibility({visibility: "hidden"});
-    }
-
-    return () => clearInterval(timer)
-  }, )
+  }, [conference.initialized]);
 
   function makeid(length) {
     var result           = '';
@@ -86,9 +60,7 @@ function WaitingRoom(props) {
   }
 
   function joinRoom(e) {
-    var generatedStreamId = props.streamName.replace(/[\W_]/g, "") + "_" + makeid(10);
-    console.log("generatedStreamId:"+generatedStreamId);
-    if (antmedia.mediaManager.localStream === null && antmedia.onlyDataChannel === false) {
+    if (conference.localVideo === null && conference.isPlayOnly === false) {
       e.preventDefault();
       enqueueSnackbar(
         {
@@ -103,21 +75,20 @@ function WaitingRoom(props) {
         }
       );
       return;
-    } else if (speedTestBeforeLogin && antmedia.onlyDataChannel !== true) {
-      antmediaSpeedTest.publish(generatedStreamId + "SpeedTest", "");
-      e.preventDefault();
-      setSpeedTestBeforeLoginModal(true);
-    } else if (speedTestBeforeLogin) {
-      antmediaSpeedTest.play(roomName + "SpeedTest", "");
-      e.preventDefault();
-      setSpeedTestBeforeLoginModal(true);
-    } else {
-      antmedia.joinRoom(roomName, generatedStreamId, roomJoinMode);
-      props.handleChangeRoomStatus("meeting");
     }
+    let streamId;
+    if (publishStreamId === null || publishStreamId === undefined) {
+      streamId = conference.streamName.replace(/[\W_]/g, "") + "_" + makeid(10);
+      console.log("generatedStreamId:"+streamId);
+    } else {
+      streamId = publishStreamId;
+    }
+
+    conference.joinRoom(roomName, streamId, conference.roomJoinMode);
+    conference.setWaitingOrMeetingRoom("meeting");
   }
   const handleDialogOpen = (focus) => {
-    if (false && antmedia.mediaManager.localStream === null) {
+    if (false && conference.localVideo === null) {
       enqueueSnackbar(
         {
           message: t(
@@ -145,7 +116,7 @@ function WaitingRoom(props) {
               open={dialogOpen}
               onClose={handleDialogClose}
               selectFocus={selectFocus}
-              handleBackgroundReplacement={props.handleBackgroundReplacement}
+              handleBackgroundReplacement={conference.handleBackgroundReplacement}
           />
 
 
@@ -156,7 +127,7 @@ function WaitingRoom(props) {
               alignItems={"center"}
           >
 
-            { antmedia.onlyDataChannel === false ?
+            { conference.isPlayOnly === false ?
             <Grid item md={7} alignSelf="stretch">
               <Grid
                   container
@@ -198,7 +169,7 @@ function WaitingRoom(props) {
                   </Grid>
                 </Grid>
               </Grid>
-              <Typography align="center" color="black" sx={{mt: 2}}>
+              <Typography align="center" color="#DDFFFC" sx={{mt: 2}}>
                 {t(
                     "You can choose whether to open your camera and microphone before you get into room"
                 )}
@@ -206,52 +177,11 @@ function WaitingRoom(props) {
             </Grid>
             : null}
 
-            <Modal
-                open={speedTestBeforeLoginModal}
-                onClose={()=>{console.log("close")}}
-                aria-labelledby="modal-modal-title"
-                aria-describedby="modal-modal-description"
-            >
-              {/* spead text MSG */}
-              <Box sx = {{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 400,
-                bgcolor: 'green.70',
-                border: '2px solid #000',
-                boxShadow: 24,
-                pt: 2,
-                px: 4,
-                pb: 3,
-              }}>
-                <Typography id="modal-modal-title" variant="h6" component="h2"   sx={{position: "center"}}>
-                  Connection Test
-                </Typography>
-                <Typography id="modal-modal-description" sx={{ mt: 2, color: "black" }}>
-                  {speedTestObject.message}
-                </Typography>
-                <Button sx={buttonVisibility} onClick={()=>{
-                  setSpeedTestBeforeLoginModal(false);
-                  setLeftTheRoom(true);
-                  speedTestObject.message = "Please wait while we are testing your connection speed";
-                  speedTestObject.isfinished = false;
-                }}>Close</Button>
-                <Button sx={buttonVisibility} onClick={()=>{
-                  antmedia.joinRoom(roomName, undefined, roomJoinMode);
-                  props.handleChangeRoomStatus("meeting");
-                  speedTestObject.message = "Please wait while we are testing your connection speed";
-                  speedTestObject.isfinished = false;
-                }}>Join</Button>
-              </Box>
-            </Modal>
-
-            <Grid item md={antmedia.onlyDataChannel === false ? 4 : 12}>
+            <Grid item md={conference.isPlayOnly === false ? 4 : 12}>
               <Grid container justifyContent={"center"}>
-              <Grid container justifyContent={"center"}>
-                  <Typography variant="h5"  color="black" align="center">
-                    {t("Welcome")}
+                <Grid container justifyContent={"center"}>
+                  <Typography variant="h5" align="center">
+                    {t("What's your name?")}
                   </Typography>
                 </Grid>
                 <Grid
@@ -265,9 +195,12 @@ function WaitingRoom(props) {
                       fontWeight={"400"}
                       style={{fontSize: 18}}
                   >
-                    {" "}
+                    {t(
+                        "Please enter your name. This will be visible to the host and other participants."
+                    )}{" "}
                   </Typography>
                 </Grid>
+
                 <form
                     onSubmit={(e) => {
                       joinRoom(e);
@@ -278,13 +211,12 @@ function WaitingRoom(props) {
                         autoFocus
                         required
                         fullWidth
-                        value={props.streamName}
+                        color="primary"
+                        value={conference.streamName}
                         variant="outlined"
-                        // onChange={(e) => props.handleStreamName(e.target.value)}
+                        onChange={(e) => conference.setStreamName(e.target.value)}
                         placeholder={t("Your name")}
-                        readOnly={true}
                         id="participant_name"
-                        inputProps={{ style: { color: "black" } }}
                     />
                   </Grid>
                   <Grid container justifyContent={"center"}>

@@ -1,11 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
 import { SvgIcon } from '../../SvgIcon';
-import { SettingsContext } from 'pages/AntMedia';
 import { Tooltip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import {AntmediaContext} from "../../../App";
+import { ConferenceContext } from 'pages/AntMedia';
 
 const CustomizedBtn = styled(Button)(({ theme }) => ({
   '&.footer-icon-button':{
@@ -22,23 +21,21 @@ const CustomizedBtn = styled(Button)(({ theme }) => ({
 }));
 
 function ParticipantListButton({ footer, ...props }) {
+    const conference = React.useContext(ConferenceContext);
     const {t} = useTranslation();
-    const settings = useContext(SettingsContext);
-    const {allParticipants } = settings;
-    const antmedia = useContext(AntmediaContext);
 
     return (
             <Tooltip title={t('Participant List')} placement="top">
                 <CustomizedBtn
                     onClick={() => {
-                        settings?.handleParticipantListOpen(!settings?.participantListDrawerOpen);
+                        conference?.handleParticipantListOpen(!conference?.participantListDrawerOpen);
                     }}
                     variant="contained"
                     className={footer ? 'footer-icon-button' : ''}
-                    color={settings?.participantListDrawerOpen ? 'primary' : 'secondary'}
+                    color={conference?.participantListDrawerOpen ? 'primary' : 'secondary'}
                 >
-                    <SvgIcon size={32} color={settings?.participantListDrawerOpen ? 'black' : 'white'} name={'participants'} />
-                    {antmedia.onlyDataChannel === false ? allParticipants.length + 1 : allParticipants.length}
+                    <SvgIcon size={32} color={conference?.participantListDrawerOpen ? 'black' : 'white'} name={'participants'} />
+                    {Object.keys(conference.allParticipants).length}
                 </CustomizedBtn>
             </Tooltip>
         );

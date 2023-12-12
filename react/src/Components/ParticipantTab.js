@@ -1,15 +1,15 @@
-import React, {useContext} from "react";
+import React from "react";
 import Stack from "@mui/material/Stack";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { styled } from "@mui/material/styles";
 import { SvgIcon } from "./SvgIcon";
-import { SettingsContext, MediaSettingsContext } from "pages/AntMedia";
-import { AntmediaContext } from "App";
-//text color
+import { ConferenceContext } from "pages/AntMedia";
+
 const ParticipantName = styled(Typography)(({ theme }) => ({
   color: "black",
+    // FIXME: color: "#ffffff",
   fontWeight: 500,
   fontSize: 14,
 }));
@@ -21,15 +21,11 @@ const PinBtn = styled(Button)(({ theme }) => ({
 }));
 
 function ParticipantTab(props) {
-  const antmedia = useContext(AntmediaContext);
-  const mediaSettings = React.useContext(MediaSettingsContext);
-  const settings = React.useContext(SettingsContext);
-
-  const { pinnedVideoId, pinVideo, allParticipants, makeParticipantUndoPresenter, makeParticipantPresenter, presenters, approvedSpeakerRequestList, makeListenerAgain } = settings;
-  const getParticipantItem = (videoId, name) => {
+  const conference = React.useContext(ConferenceContext);
+  const getParticipantItem = (streamId, name, assignedVideoCardId) => {
     return (
       <Grid
-        key={videoId}
+        key={streamId}
         container
         alignItems="center"
         justifyContent="space-between"
@@ -40,17 +36,28 @@ function ParticipantTab(props) {
           <ParticipantName variant="body1">{name}</ParticipantName>
         </Grid>
         <Grid item>
-          {pinnedVideoId === videoId ? (
+          {conference.pinnedVideoId === assignedVideoCardId ? (
             <PinBtn
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-              onClick={() => pinVideo(videoId)}
+              onClick={() => conference.pinVideo(assignedVideoCardId)}
             >
-              <SvgIcon size={28} name="unpin" color="black" />
+                <SvgIcon size={28} name="unpin" color="black" />
             </PinBtn>
           ) : (
             <PinBtn
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-              onClick={() => pinVideo(videoId)}
+              onClick={() => {
+                if(assignedVideoCardId === undefined) {
+                  //if videoTrackId is undefined, then it means that we try to pin someone who has no video player on the screen
+                  //then we will assign the 1st player in the screen to that user
+
+                  conference.assignVideoToStream(conference.participants[1].id, streamId);
+                  //conference.pinVideo(conference.participants[1].id);
+                }
+                else {
+                  conference.pinVideo(assignedVideoCardId);
+                }
+              }}
             >
               <SvgIcon size={28} name="pin" color="black" />
             </PinBtn>
@@ -94,13 +101,14 @@ function ParticipantTab(props) {
                   variant="body2"
                   style={{marginLeft: 4, fontWeight: 500}}
               >
-                {antmedia.onlyDataChannel === false ? allParticipants.length + 1 : allParticipants.length}
+                {Object.keys(conference.allParticipants).length}
               </ParticipantName>
             </Grid>
-            {antmedia.onlyDataChannel === false ? getParticipantItem("localVideo", "You") : ""}
-            {allParticipants.map(({streamId, streamName}, index) => {
-              if (mediaSettings?.myLocalData?.streamId !== streamId) {
-                return getParticipantItem(streamId, streamName);
+            {conference.isPlayOnly === false ? getParticipantItem("localVideo", "You") : ""}
+            {Object.entries(conference.allParticipants).map(([streamId, broadcastObject]) => {
+              if (conference.publishStreamId !== streamId) {
+                var assignedVideoCardId = conference.participants.find(p => p.streamId === streamId)?.id;
+                return getParticipantItem(streamId, broadcastObject.name, assignedVideoCardId);
               } else {
                 return "";
               }

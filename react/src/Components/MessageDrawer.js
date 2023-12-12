@@ -6,29 +6,54 @@ import MessageInput from './MessageInput';
 import { useTranslation } from 'react-i18next';
 import MessagesTab from './MessagesTab';
 import CloseDrawerButton from './DrawerButton';
-import {AntmediaContext} from "../App";
+import { ConferenceContext } from 'pages/AntMedia';
+import { getRoomNameAttribute } from 'utils';
 
-const AntDrawer = styled(Drawer)(({ theme }) => ({
-  '& .MuiDrawer-root': {
-    position: 'absolute'
-  },
-  '& .MuiBackdrop-root': {
-    backgroundColor: 'transparent',
-  },
-  '& .MuiPaper-root': {
-    padding: 12,
-    backgroundColor: 'transparent',
-    position: 'absolute',
-    boxShadow: 'unset',
-    width: 360,
-    border: 'unset',
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-      padding: 0,
-      backgroundColor: theme.palette.green70,
+const getAntDrawerStyle = (theme) => {
+  if (getRoomNameAttribute()) {
+    return {
+      '& .MuiDrawer-root': {
+        position: 'absolute',
+      },
+      '& .MuiBackdrop-root': {
+        backgroundColor: 'transparent',
+      },
+      '& .MuiPaper-root': {
+        padding: 12,
+        backgroundColor: 'transparent',
+        position: 'absolute',
+        boxShadow: 'unset',
+        width: 360,
+        border: 'unset',
+        [theme.breakpoints.down('sm')]: {
+          width: '100%',
+          padding: 0,
+          backgroundColor: theme.palette.green70,
+        },
+      },
+    }
+  } else {
+    return {
+      '& .MuiBackdrop-root': {
+      backgroundColor: 'transparent',
     },
-  },
-}));
+      '& .MuiPaper-root': {
+      padding: 12,
+          backgroundColor: 'transparent',
+          boxShadow: 'unset',
+          width: 360,
+          border: 'unset',
+          [theme.breakpoints.down('sm')]: {
+        width: '100%',
+            padding: 0,
+            backgroundColor: theme.palette.green70,
+      },
+    },
+    };
+  }
+}
+
+const AntDrawer = styled(Drawer)(({ theme }) => (getAntDrawerStyle(theme)));
 
 const MessageGrid = styled(Grid)(({ theme }) => ({
   position: 'relative',
@@ -45,9 +70,8 @@ const TabGrid = styled(Grid)(({ theme }) => ({
 }));
 
 const MessageDrawer = React.memo(props => {
-  const { messageDrawerOpen, messages = [] } = props;
   const [value, setValue] = React.useState(0);
-  const antmedia = React.useContext(AntmediaContext);
+  const conference = React.useContext(ConferenceContext);
 
   const { t } = useTranslation();
 
@@ -55,15 +79,17 @@ const MessageDrawer = React.memo(props => {
     setValue(newValue);
   };
 
-  const TabPanel = props => {
-    const { children, value, index, ...other } = props;
+  const TabPanel = React.useMemo(() => {
+    return (props) => {
+      const { children, value, index, ...other } = props;
+      return (
+        <div role="tabpanel" hidden={value !== index} id={`drawer-tabpanel-${index}`} aria-labelledby={`drawer-tab-${index}`} {...other} style={{ height: '100%', width: '100%', overflowY: 'auto' }}>
+          {value === index && children}
+        </div>
+      );
+    };
+  }, []);
 
-    return (
-      <div role="tabpanel" hidden={value !== index} id={`drawer-tabpanel-${index}`} aria-labelledby={`drawer-tab-${index}`} {...other} style={{ height: '100%', width: '100%' }}>
-        {value === index && children}
-      </div>
-    );
-  };
 
   function a11yProps(index) {
     return {
@@ -73,7 +99,7 @@ const MessageDrawer = React.memo(props => {
   }
 
 return (
-        <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={messageDrawerOpen} variant="persistent">
+        <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={conference.messageDrawerOpen} variant="persistent">
           <MessageGrid container direction="column" style={{ flexWrap: 'nowrap', height: '100%', overflow: 'hidden' }}>
             <Grid item container justifyContent="space-between" alignItems="center">
               <Tabs
@@ -93,12 +119,12 @@ return (
             <Grid item container justifyContent="space-between" alignItems="center" style={{ flex: '1 1 auto', overflowY: 'hidden' }}>
               <TabPanel value={value} index={0}>
                 <TabGrid container sx={{ pb: 0 }} direction={'column'}>
-                  <MessagesTab messages={messages}/>
+                  <MessagesTab messages={conference.messages}/>
                 </TabGrid>
               </TabPanel>
             </Grid>
 
-            {antmedia.isPlayMode === false && value === 0 ?
+            {conference.isPlayOnly === false && value === 0 ?
             <MessageInput />
                 : <Typography variant="body2" sx={{px: 1.5, py: 0.5, fontSize: 12, fontWeight: 700}} color="#000000">
                   {t('You cannot send message in play only mode')}

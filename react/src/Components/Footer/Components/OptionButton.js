@@ -8,7 +8,7 @@ import { SettingsDialog } from "./SettingsDialog";
 import { LayoutSettingsDialog } from "./LayoutSettingsDialog";
 import { ListItemIcon, ListItemText, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { AntmediaContext } from "App";
+import { ConferenceContext } from 'pages/AntMedia';
 
 const CustomizedBtn = styled(Button)(({ theme }) => ({
   "&.footer-icon-button": {
@@ -25,12 +25,12 @@ const CustomizedBtn = styled(Button)(({ theme }) => ({
 }));
 
 function OptionButton({ footer, ...props }) {
+  const conference = React.useContext(ConferenceContext);
   const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [layoutDialogOpen, setLayoutDialogOpen] = React.useState(false);
-  const antmedia = React.useContext(AntmediaContext);
 
   // if you select camera then we are going to focus on camera button.
   const [selectFocus, setSelectFocus] = React.useState(null);
@@ -59,15 +59,6 @@ function OptionButton({ footer, ...props }) {
   const handleLayoutDialogClose = (value) => {
     setLayoutDialogOpen(false);
   };
-
-  /* I've removed this change layout button from the menu because there are some errors in the backend
-  <MenuItem onClick={() => handleLayoutDialogOpen()}>
-  <ListItemIcon>
-    <SvgIcon size={36} name={"layout"} color={"white"} />
-  </ListItemIcon>
-  <ListItemText>{t("Change Layout dfd")}</ListItemText>
-</MenuItem>
-*/
 
     return (
         <>
@@ -112,10 +103,14 @@ function OptionButton({ footer, ...props }) {
                 horizontal: "left",
               }}
           >
-            
-   
+            <MenuItem onClick={() => handleLayoutDialogOpen()}>
+              <ListItemIcon>
+                <SvgIcon size={36} name={"layout"} color={"white"} />
+              </ListItemIcon>
+              <ListItemText>{t("Change Layout")}</ListItemText>
+            </MenuItem>
 
-              {antmedia.onlyDataChannel === false ?
+              {conference.isPlayOnly === false ?
             <MenuItem onClick={() => handleDialogOpen()}>
               <ListItemIcon>
                 <SvgIcon size={36} name={"call-settings"} color={"white"} />

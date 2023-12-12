@@ -11,9 +11,12 @@ import ShareScreenButton from "./Components/ShareScreenButton";
 import MessageButton from "./Components/MessageButton";
 import ParticipantListButton from "./Components/ParticipantListButton";
 import EndCallButton from "./Components/EndCallButton";
+import FakeParticipantButton from "./Components/FakeParticipantButton";
 import TimeZone from "./Components/TimeZone";
-import {AntmediaContext} from "../../App";
+import { useParams } from "react-router-dom";
 import PublisherRequestListButton from "./Components/PublisherRequestListButton";
+import { ConferenceContext } from 'pages/AntMedia';
+import { getRoomNameAttribute } from 'utils';
 
 const CustomizedGrid = styled(Grid)(({ theme }) => ({
   backgroundColor: theme.palette.green[80],
@@ -26,7 +29,8 @@ const CustomizedGrid = styled(Grid)(({ theme }) => ({
   height: 80,
 }));
 function Footer(props) {
-  const antmedia = React.useContext(AntmediaContext);
+    const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
+    const conference = React.useContext(ConferenceContext);
 
     return (
         <CustomizedGrid
@@ -37,7 +41,7 @@ function Footer(props) {
           <Grid item sx={{display: {xs: "none", sm: "block"}}}>
             <Grid container alignItems={"center"}>
               <Typography color="black" variant="body1">
-                {antmedia.roomName}
+                {conference.roomName}
               </Typography>
               <InfoButton/>
             </Grid>
@@ -52,38 +56,41 @@ function Footer(props) {
                     <OptionButton footer/>
                   </Grid>
 
-                  {antmedia.onlyDataChannel === false ?
+                  {conference.isPlayOnly === false ?
                   <Grid item xs={0}>
                     <CameraButton {...props} footer/>
                   </Grid>
                     : null}
 
-                  {antmedia.onlyDataChannel === false ?
+                  {conference.isPlayOnly === false ?
                   <Grid item xs={0}>
                     <MicButton footer/>
                   </Grid>
                       : null}
 
-                  {antmedia.onlyDataChannel === false ?
+                  {conference.isPlayOnly === false ?
                   <Grid item xs={0}>
                     {" "}
                     <ShareScreenButton footer/>
                   </Grid>
                       : null}
 
-                  {antmedia.onlyDataChannel === false ?
+                  <Grid item xs={0} style={{display: '-webkit-inline-box'}}>
+                    <ReactionsButton footer/>
+                  </Grid>
+
                   <Grid item xs={0}>
                       <ParticipantListButton footer />
                   </Grid>
                  : null}
 
-                  {antmedia.admin === true ?
+                  {conference.admin === true ?
                     <Grid item xs={0}>
                       <PublisherRequestListButton footer />
                     </Grid>
                       : null}
 
-                  {antmedia.onlyDataChannel !== false ?
+                  {conference.onlyDataChannel !== false ?
                       <Grid item xs={0}>
                         <RequestPublishButton footer/>
                       </Grid>
@@ -92,11 +99,29 @@ function Footer(props) {
                   <Grid item xs={0}>
                     <EndCallButton footer/>
                   </Grid>
+                  {process.env.NODE_ENV === "development" ?
+                  <Grid item xs={0}>
+                    <FakeParticipantButton
+                      footer
+                      increment={true}
+                    />
+                  </Grid>
+                  : null}
+
+                  {process.env.NODE_ENV === "development" ?
+                  <Grid item xs={0}>
+                    <FakeParticipantButton
+                      footer
+                      increment={false}
+                    />
+                  </Grid>
+                  : null}
+
                 </Grid>
               </Grid>
 
           <Grid item sx={{display: {xs: "none", sm: "block"}}}>
-            <TimeZone />
+            <TimeZone/>
           </Grid>
         </CustomizedGrid>
     );
