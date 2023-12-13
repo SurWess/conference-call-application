@@ -20,6 +20,7 @@ import ParticipantListDrawer from "../Components/ParticipantListDrawer";
 import {getRoomNameAttribute, getRootAttribute, getWebSocketURLAttribute} from "../utils";
 import floating from "../external/floating.js";
 import {useTranslation} from "react-i18next";
+import PublisherRequestListDrawer from "../Components/PublisherRequestListDrawer";
 
 export const ConferenceContext = React.createContext(null);
 
@@ -655,6 +656,7 @@ function AntMedia() {
       webRTCAdaptor.switchVideoCameraCapture(publishStreamId, selectedDevices.videoDeviceId);
     }
     if (webRTCAdaptor !== null && (currentAudioDeviceId !== selectedDevices.audioDeviceId || selectedDevices.audioDeviceId === 'default') && typeof publishStreamId != 'undefined') {
+        debugger;
       webRTCAdaptor.switchAudioInputSource(publishStreamId, selectedDevices.audioDeviceId);
     }
   }
@@ -1413,7 +1415,7 @@ function AntMedia() {
         webRTCAdaptor.getBroadcastObject(eventStreamId);
       }
       else if (eventType === "MESSAGE_RECEIVED") {
-        if(notificationEvent.senderId === publishStreamId) {
+        if(notificationEvent.senderId === publishStreamId || isFakeeh === true) {
           return;
         }
         calculate_scroll_height();
@@ -2050,6 +2052,7 @@ function AntMedia() {
             makeParticipantPresenter,
             rejectSpeakerRequest,
             approveBecomeSpeakerRequest,
+            setPublisherRequestListDrawerOpen,
             resetAllParticipants,
             displayNoVideoAudioDeviceFoundWarning,
             getAllParticipants,
@@ -2077,6 +2080,7 @@ function AntMedia() {
                 <MeetingRoom />
                 <MessageDrawer />
                 <ParticipantListDrawer />
+                <PublisherRequestListDrawer />
               </>
             )}
           </SnackbarProvider>

@@ -5,6 +5,7 @@ import {  Grid,  Tabs, Tab } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import CloseDrawerButton from './DrawerButton';
 import PublisherRequestTab from "./PublisherRequestTab";
+import {ConferenceContext} from "../pages/AntMedia";
 
 const AntDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-root': {
@@ -43,9 +44,8 @@ const TabGrid = styled(Grid)(({ theme }) => ({
 }));
 
 const PublisherRequestListDrawer = React.memo(props => {
-  const { publisherRequestListDrawerOpen = [] } = props;
   const [value, setValue] = React.useState(0);
-  const { requestSpeakerList } = props;
+  const conference = React.useContext(ConferenceContext);
 
   const { t } = useTranslation();
 
@@ -71,7 +71,7 @@ const PublisherRequestListDrawer = React.memo(props => {
   }
 
   return (
-      <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={publisherRequestListDrawerOpen} variant="persistent">
+      <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={conference.publisherRequestListDrawerOpen} variant="persistent">
         <PublisherRequestListGrid container direction="column" style={{ flexWrap: 'nowrap', height: '100%', overflow: 'hidden' }}>
           <Grid item container justifyContent="space-between" alignItems="center">
             <Tabs
@@ -91,7 +91,7 @@ const PublisherRequestListDrawer = React.memo(props => {
           <Grid item container justifyContent="space-between" alignItems="center" style={{ flex: '1 1 auto', overflowY: 'hidden' }}>
             <TabPanel value={value} index={0}>
               <TabGrid container>
-                <PublisherRequestTab requestSpeakerList={requestSpeakerList} />
+                <PublisherRequestTab />
               </TabGrid>
             </TabPanel>
           </Grid>

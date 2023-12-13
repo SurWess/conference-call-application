@@ -5,8 +5,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { styled } from "@mui/material/styles";
 import { SvgIcon } from "./SvgIcon";
-import { SettingsContext, MediaSettingsContext } from "pages/AntMedia";
-import { AntmediaContext } from "App";
+import {ConferenceContext} from "../pages/AntMedia";
 
 const PublisherRequestName = styled(Typography)(({ theme }) => ({
   color: "black",
@@ -22,11 +21,8 @@ const PinBtn = styled(Button)(({ theme }) => ({
 }));
 
 function PublisherRequestTab(props) {
-  const antmedia = useContext(AntmediaContext);
-  const mediaSettings = React.useContext(MediaSettingsContext);
-  const settings = React.useContext(SettingsContext);
+  const conference = useContext(ConferenceContext);
 
-  const { requestSpeakerList, setRequestSpeakerList } = settings;
   const getPublisherRequestItem = (videoId) => {
     return (
       <Grid
@@ -43,14 +39,14 @@ function PublisherRequestTab(props) {
         <Grid item>
             <PinBtn
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-              onClick={() => {antmedia.approveBecomeSpeakerRequest(videoId); setRequestSpeakerList(requestSpeakerList.filter((item) => item.streamId !== videoId))}}
+              onClick={() => {conference.approveBecomeSpeakerRequest(videoId); conference.setRequestSpeakerList(requestSpeakerList.filter((item) => item.streamId !== videoId))}}
             >
               Allow
             </PinBtn>
 
           <PinBtn
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-              onClick={() => {antmedia.rejectSpeakerRequest(videoId); setRequestSpeakerList(requestSpeakerList.filter((item) => item.streamId !== videoId))}}
+              onClick={() => {conference.rejectSpeakerRequest(videoId); conference.setRequestSpeakerList(requestSpeakerList.filter((item) => item.streamId !== videoId))}}
           >
             Deny
           </PinBtn>
@@ -68,11 +64,11 @@ function PublisherRequestTab(props) {
                   variant="body2"
                   style={{marginLeft: 8, fontWeight: 500}}
               >
-                {requestSpeakerList.length}
+                {conference.requestSpeakerList.length}
               </PublisherRequestName>
             </Grid>
-            {requestSpeakerList.map(({streamId}, index) => {
-              if (mediaSettings?.myLocalData?.streamId !== streamId) {
+            {conference.requestSpeakerList.map(({streamId}, index) => {
+              if (conference.publishStreamId !== streamId) {
                 return getPublisherRequestItem(streamId);
               } else {
                 return "";
