@@ -60,7 +60,6 @@ var admin;// = getRootAttribute("admin"); FIXME
 if (!admin) {
     admin = getUrlParameter("admin");
 }
-debugger;
 
 var videoQualityConstraints = {
     video: {
@@ -672,7 +671,6 @@ function AntMedia() {
   }
 
   function joinRoom(roomName, generatedStreamId, roomJoinMode) {
-        debugger;
       if (playOnly) {
           roomName = roomName + "listener";
       }
@@ -1492,7 +1490,7 @@ function AntMedia() {
           notificationEvent.streamId === publishStreamId &&
           !isScreenShared
         ) {
-            webRTCAdaptor.updateStreamMetaData(publishStreamId, JSON.stringify(userStatusMetadata));
+            updateVideoSendResolution(true);
         }
       }
       else if (eventType === "UNPIN_USER") {
@@ -1500,7 +1498,7 @@ function AntMedia() {
           notificationEvent.streamId === publishStreamId &&
           !isScreenShared
         ) {
-            webRTCAdaptor.updateStreamMetaData(publishStreamId, JSON.stringify(userStatusMetadata));
+            updateVideoSendResolution(false);
         }
       }
       else if (eventType === "VIDEO_TRACK_ASSIGNMENT_LIST") {
@@ -1585,7 +1583,11 @@ function AntMedia() {
     webRTCAdaptor?.stop(publishStreamId);
     webRTCAdaptor?.stop(roomName);
 
-    webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
+    try {
+        webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
+    } catch (e) {
+        console.error("turnOffLocalCamera throws", e);
+    }
     setWaitingOrMeetingRoom("waiting");
   }
 
@@ -1656,18 +1658,22 @@ function AntMedia() {
     };
 
     let tempParticipants = [];
-    tempParticipants.push(newVideoTrack);
+    if (!isListener) {
+        tempParticipants.push(newVideoTrack);
+    }
     setParticipants(tempParticipants);
 
     let allParticipantsTemp = {};
-    allParticipantsTemp[publishStreamId] = {name:"You"};
+    if (!isListener) {
+        allParticipantsTemp[publishStreamId] = {name: "You"};
+    }
     setAllParticipants(allParticipantsTemp);
   }
 
   function addMeAsParticipant(publishStreamId) {
     let isParticipantExist = participants.find((p) => p.id === "localVideo");
 
-    if(isParticipantExist) {
+    if(isParticipantExist || isListener) {
         return;
     }
 
