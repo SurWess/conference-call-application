@@ -39,14 +39,14 @@ function PublisherRequestTab(props) {
         <Grid item>
             <PinBtn
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-              onClick={() => {conference.approveBecomeSpeakerRequest(videoId); conference.setRequestSpeakerList(requestSpeakerList.filter((item) => item.streamId !== videoId))}}
+              onClick={() => {conference.approveBecomeSpeakerRequest(videoId); conference.setRequestSpeakerList(conference.requestSpeakerList.filter((item) => item.streamId !== videoId))}}
             >
               Allow
             </PinBtn>
 
           <PinBtn
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-              onClick={() => {conference.rejectSpeakerRequest(videoId); conference.setRequestSpeakerList(requestSpeakerList.filter((item) => item.streamId !== videoId))}}
+              onClick={() => {conference.rejectSpeakerRequest(videoId); conference.setRequestSpeakerList(conference.requestSpeakerList.filter((item) => item.streamId !== videoId))}}
           >
             Deny
           </PinBtn>

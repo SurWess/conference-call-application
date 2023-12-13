@@ -2044,6 +2044,7 @@ function AntMedia() {
             restBaseUrl,
             handlePublisherRequestListOpen,
             requestSpeakerList,
+            setRequestSpeakerList,
             publisherRequestListDrawerOpen,
             isListener,
             isAdmin,
