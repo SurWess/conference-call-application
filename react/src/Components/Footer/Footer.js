@@ -8,15 +8,12 @@ import RequestPublishButton from "./Components/RequestPublishButton";
 import CameraButton from "./Components/CameraButton";
 import OptionButton from "./Components/OptionButton";
 import ShareScreenButton from "./Components/ShareScreenButton";
-import MessageButton from "./Components/MessageButton";
 import ParticipantListButton from "./Components/ParticipantListButton";
 import EndCallButton from "./Components/EndCallButton";
 import FakeParticipantButton from "./Components/FakeParticipantButton";
 import TimeZone from "./Components/TimeZone";
-import { useParams } from "react-router-dom";
 import PublisherRequestListButton from "./Components/PublisherRequestListButton";
 import { ConferenceContext } from 'pages/AntMedia';
-import { getRoomNameAttribute } from 'utils';
 import ReactionsButton from "./Components/ReactionsButton";
 
 const CustomizedGrid = styled(Grid)(({ theme }) => ({
@@ -31,7 +28,6 @@ const CustomizedGrid = styled(Grid)(({ theme }) => ({
 }));
 function Footer(props) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
     const conference = React.useContext(ConferenceContext);
 
     return (
@@ -77,9 +73,11 @@ function Footer(props) {
                   </Grid>
                       : null}
 
+                    {conference.isFakeeh === false ?
                   <Grid item xs={0} style={{display: '-webkit-inline-box'}}>
                     <ReactionsButton footer/>
                   </Grid>
+                    : null}
 
                   {conference.isListener === false ?
                   <Grid item xs={0}>
@@ -87,7 +85,7 @@ function Footer(props) {
                   </Grid>
                  : null}
 
-                  {conference.admin === true ?
+                  {conference.isAdmin == "true" ?
                     <Grid item xs={0}>
                       <PublisherRequestListButton footer />
                     </Grid>
@@ -102,7 +100,7 @@ function Footer(props) {
                   <Grid item xs={0}>
                     <EndCallButton footer/>
                   </Grid>
-                  {process.env.NODE_ENV === "development" ?
+                  {process.env.NODE_ENV === "development" && conference.isFakeeh === false ?
                   <Grid item xs={0}>
                     <FakeParticipantButton
                       footer
@@ -111,7 +109,7 @@ function Footer(props) {
                   </Grid>
                   : null}
 
-                  {process.env.NODE_ENV === "development" ?
+                  {process.env.NODE_ENV === "development" && conference.isFakeeh === false ?
                   <Grid item xs={0}>
                     <FakeParticipantButton
                       footer

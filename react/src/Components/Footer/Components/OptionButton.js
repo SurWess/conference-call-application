@@ -103,12 +103,14 @@ function OptionButton({ footer, ...props }) {
                 horizontal: "left",
               }}
           >
+            { conference.isFakeeh === false ?
             <MenuItem onClick={() => handleLayoutDialogOpen()}>
               <ListItemIcon>
                 <SvgIcon size={36} name={"layout"} color={"white"} />
               </ListItemIcon>
               <ListItemText>{t("Change Layout")}</ListItemText>
             </MenuItem>
+                    : null}
 
               {conference.isListener === false ?
             <MenuItem onClick={() => handleDialogOpen()}>

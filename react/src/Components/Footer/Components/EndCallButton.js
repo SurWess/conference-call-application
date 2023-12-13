@@ -29,7 +29,7 @@ function EndCallButton({ footer, ...props }) {
 
   const endCall = () =>
   {
-    if (conference.admin && (conference.presenters.length > 0 || conference.approvedSpeakerRequestList.length > 0))
+    if (conference.isAdmin == "true" && (conference.presenters.length > 0 || conference.approvedSpeakerRequestList.length > 0))
     {
       setOpenConfirmationDialog(true);
     }

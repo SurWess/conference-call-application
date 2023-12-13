@@ -56,31 +56,41 @@ var scrollThreshold = -Infinity;
 var scroll_down = true;
 var last_warning_time = null;
 
-var admin = getRootAttribute("admin");
+var admin;// = getRootAttribute("admin"); FIXME
 if (!admin) {
     admin = getUrlParameter("admin");
 }
+debugger;
 
 var videoQualityConstraints = {
-  video: {
-    width: { max: 320 },
-    height: { max: 240 },
-    frameRate: 15
-  }
-}
+    video: {
+        width: {ideal: 640}, height: {ideal: 360},
+        advanced: [
+            {frameRate: {min: 15}}, {height: {min: 360}}, {width: {min: 640}}, {frameRate: {max: 15}}, {width: {max: 640}}, {height: {max: 360}}, {aspectRatio: {exact: 1.77778}}
+        ]
+    },
+};
 
 var audioQualityConstraints = {
   audio: {
     noiseSuppression: true,
     echoCancellation: true
   }
-}
+};
 
 var mediaConstraints = {
   // setting constraints here breaks source switching on firefox.
   video: videoQualityConstraints.video,
   audio: audioQualityConstraints.audio,
 };
+
+if (localStorage.getItem('selectedCamera')) {
+    mediaConstraints.video.deviceId = localStorage.getItem('selectedCamera');
+}
+
+if (localStorage.getItem('selectedMicrophone')) {
+    mediaConstraints.audio.deviceId = localStorage.getItem('selectedMicrophone');
+}
 
 let websocketURL = process.env.REACT_APP_WEBSOCKET_URL;
 let restBaseUrl = process.env.REACT_APP_REST_BASE_URL;
@@ -206,6 +216,10 @@ function AntMedia() {
 
   const [isListener, setIsListener] = useState(playOnly);
 
+  const [isAdmin, setIsAdmin] = useState(admin);
+
+  const [isFakeeh, setIsFakeeh] = useState(true);
+
   const [reactions] = useState({
     'sparkling_heart': '💖',
     'thumbs_up': '👍🏼',
@@ -244,8 +258,8 @@ function AntMedia() {
 
   const [talkers, setTalkers] = useState([]);
   const [isPublished, setIsPublished] = useState(false);
-  const [selectedCamera, setSelectedCamera] = React.useState("");
-  const [selectedMicrophone, setSelectedMicrophone] = React.useState("");
+  const [selectedCamera, setSelectedCamera] = React.useState(localStorage.getItem('selectedCamera'));
+  const [selectedMicrophone, setSelectedMicrophone] = React.useState(localStorage.getItem('selectedMicrophone'));
   const [selectedBackgroundMode, setSelectedBackgroundMode] = React.useState("");
   const [isVideoEffectRunning, setIsVideoEffectRunning] = React.useState(false);
   const [virtualBackground, setVirtualBackground] = React.useState(null);
@@ -277,6 +291,10 @@ function AntMedia() {
 
     const [messages, setMessages] = useState([]);
     const [observerMode, setObserverMode] = useState(false);
+
+    // video send resolution for publishing
+    // possible values: "auto", "highDefinition", "standartDefinition", "lowDefinition"
+    const [videoSendResolution, setVideoSendResolution] = React.useState(localStorage.getItem("videoSendResolution") ? localStorage.getItem("videoSendResolution") : "auto");
 
     function makeParticipantPresenter(id) {
         let streamId = id;
@@ -573,6 +591,15 @@ function AntMedia() {
         createWebRTCAdaptorAdminOnly();
     }, [recreateAdaptor]);  // eslint-disable-line react-hooks/exhaustive-deps
 
+    useEffect(() => {
+        checkAndUpdateVideoAudioSources();
+    }, [devices]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        updateVideoSendResolution(pinnedVideoId === "localVideo");
+        localStorage.setItem('videoSendResolution', videoSendResolution);
+    }, [videoSendResolution, isScreenShared, pinnedVideoId]);  // eslint-disable-line react-hooks/exhaustive-deps
+
     function makeFullScreen(divId) {
     if (fullScreenId === divId) {
       document.getElementById(divId).classList.remove("selected");
@@ -625,10 +652,10 @@ function AntMedia() {
 
     setSelectedDevices(selectedDevices);
 
-    if (webRTCAdaptor !== null && currentCameraDeviceId !== selectedDevices.videoDeviceId) {
+    if (webRTCAdaptor !== null && currentCameraDeviceId !== selectedDevices.videoDeviceId && typeof publishStreamId != 'undefined') {
       webRTCAdaptor.switchVideoCameraCapture(publishStreamId, selectedDevices.videoDeviceId);
     }
-    if (webRTCAdaptor !== null && (currentAudioDeviceId !== selectedDevices.audioDeviceId || selectedDevices.audioDeviceId === 'default')) {
+    if (webRTCAdaptor !== null && (currentAudioDeviceId !== selectedDevices.audioDeviceId || selectedDevices.audioDeviceId === 'default') && typeof publishStreamId != 'undefined') {
       webRTCAdaptor.switchAudioInputSource(publishStreamId, selectedDevices.audioDeviceId);
     }
   }
@@ -997,6 +1024,57 @@ function AntMedia() {
 
   window.makeFullScreen = makeFullScreen;
 
+    function getMediaConstraints(videoSendResolution, frameRate) {
+        let constraint = null;
+
+        switch (videoSendResolution) {
+            case "qvgaConstraints":
+                constraint = {
+                    video: {
+                        width: {ideal: 320}, height: {ideal: 180},
+                        advanced: [
+                            {frameRate: {min: frameRate}}, {height: {min: 180}}, {width: {min: 320}}, {frameRate: {max: frameRate}}, {width: {max: 320}}, {height: {max: 180}}, {aspectRatio: {exact: 1.77778}}
+                        ]
+                    }
+                };
+                break;
+            case "vgaConstraints":
+                constraint = {
+                    video: {
+                        width: {ideal: 640}, height: {ideal: 360},
+                        advanced: [
+                            {frameRate: {min: frameRate}}, {height: {min: 360}}, {width: {min: 640}}, {frameRate: {max: frameRate}}, {width: {max: 640}}, {height: {max: 360}}, {aspectRatio: {exact: 1.77778}}
+                        ]
+                    }
+                };
+                break;
+            case "hdConstraints":
+                constraint = {
+                    video: {
+                        width: {ideal: 1280}, height: {ideal: 720},
+                        advanced: [
+                            {frameRate: {min: frameRate}}, {height: {min: 720}}, {width: {min: 1280}}, {frameRate: {max: frameRate}}, {width: {max: 1280}}, {height: {max: 720}}, {aspectRatio: {exact: 1.77778}}
+                        ]
+                    }
+                };
+                break;
+            case "fullHdConstraints":
+                constraint = {
+                    video: {
+                        width: {ideal: 1920}, height: {ideal: 1080},
+                        advanced: [
+                            {frameRate: {min: frameRate}}, {height: {min: 1080}}, {width: {min: 1920}}, {frameRate: {max: frameRate}}, {width: {max: 1920}}, {height: {max: 1080}}, {aspectRatio: {exact: 1.77778}}
+                        ]
+                    }
+                };
+                break;
+            default:
+                break;
+        }
+
+        return constraint;
+    }
+
 
   function setLocalVideo() {
 
@@ -1019,14 +1097,14 @@ function AntMedia() {
 
     // id is for pinning user.
     let videoLabel = videoLabelProp;
-    if (videoLabel === "") {
-      // if videoLabel is missing try to find it from participants.
-      videoLabel = participants.find((p) => id === p.id).videoLabel;
-    }
-    if (videoLabel === "") {
-      // if videoLabel is still missing then we are not going to pin/unpin anyone.
-      return;
-    }
+      if (videoLabel === undefined || videoLabel === "") {
+          // if videoLabel is missing try to find it from participants.
+          videoLabel = participants.find((p) => id === p.id)?.videoLabel;
+      }
+      if (videoLabel === undefined || videoLabel === "") {
+          // if videoLabel is still missing get the firs one if it exist, this may happen when one join while someone is sharing screen
+          videoLabel = participants[1]?.videoLabel;
+      }
 
     var streamId = participants.find((p) => id === p.id)?.streamId;
     // if we already pin the targeted user then we are going to remove it from pinned video.
@@ -1038,7 +1116,7 @@ function AntMedia() {
     // if there is no pinned video we are gonna pin the targeted user.
     // and we need to inform pinned user.
     else {
-      setPinnedVideoId(id);
+      setPinnedVideoId(videoLabel);
       handleNotifyPinUser(id);
       webRTCAdaptor.assignVideoTrack(videoLabel, streamId, true);
     }
@@ -1100,11 +1178,6 @@ function AntMedia() {
   }
   function screenShareOnNotification() {
     setIsScreenShared(true);
-    let requestedMediaConstraints = {
-      width: 1920,
-      height: 1080,
-    };
-    webRTCAdaptor.applyConstraints(requestedMediaConstraints);
     handleSendNotificationEvent(
       "SCREEN_SHARED_ON",
       publishStreamId
@@ -1112,8 +1185,6 @@ function AntMedia() {
 
     let userStatusMetadata = getUserStatusMetadata(isMyMicMuted, !isMyCamTurnedOff, true);
     webRTCAdaptor.updateStreamMetaData(publishStreamId, JSON.stringify(userStatusMetadata));
-
-    setPinnedVideoId("localVideo");
   }
 
   function turnOffYourMicNotification(participantId) {
@@ -1172,11 +1243,7 @@ function AntMedia() {
         webRTCAdaptor.switchVideoCameraCapture(publishStreamId);
       }
       screenShareOffNotification();
-      let requestedMediaConstraints = {
-        width: 320,
-        height: 240,
-      };
-      webRTCAdaptor.applyConstraints(requestedMediaConstraints);
+      updateVideoSendResolution(false);
       setCloseScreenShare(false);
     } else {
       setCloseScreenShare(true);
@@ -1425,14 +1492,7 @@ function AntMedia() {
           notificationEvent.streamId === publishStreamId &&
           !isScreenShared
         ) {
-          let requestedMediaConstraints = {
-            width: 640,
-            height: 480,
-            frameRate: 30
-          };
-          webRTCAdaptor.applyConstraints(
-            requestedMediaConstraints
-          );
+            webRTCAdaptor.updateStreamMetaData(publishStreamId, JSON.stringify(userStatusMetadata));
         }
       }
       else if (eventType === "UNPIN_USER") {
@@ -1440,14 +1500,7 @@ function AntMedia() {
           notificationEvent.streamId === publishStreamId &&
           !isScreenShared
         ) {
-          let requestedMediaConstraints = {
-            width: 320,
-            height: 240,
-            frameRate: 15
-          };
-          webRTCAdaptor.applyConstraints(
-            requestedMediaConstraints
-          );
+            webRTCAdaptor.updateStreamMetaData(publishStreamId, JSON.stringify(userStatusMetadata));
         }
       }
       else if (eventType === "VIDEO_TRACK_ASSIGNMENT_LIST") {
@@ -1461,7 +1514,7 @@ function AntMedia() {
         temp.forEach((p) => {
           let assignment = videoTrackAssignments.find((vta) => p.videoLabel === vta.videoLabel);
           if (!p.isMine && assignment === undefined) {
-            temp = temp.slice(temp.findIndex(p), 1);
+            temp.splice(temp.findIndex(p), 1);
           }
         });
 
@@ -1552,25 +1605,49 @@ function AntMedia() {
     webRTCAdaptor.sendData(publishStreamId, JSON.stringify(notEvent));
   }
 
-  /*
-  function updateStatus(obj) {
-    if (roomName !== obj) {
-      handleSendNotificationEvent("UPDATE_STATUS", publishStreamId, {
-        mic: !!mic.find((c) => c.eventStreamId === "localVideo")?.isMicMuted,
-        camera: !!cam.find((c) => c.eventStreamId === "localVideo")?.isCameraOn,
-        isPinned:
-          pinnedVideoId === "localVideo" ? publishStreamId : pinnedVideoId,
-        isScreenShared: isScreenShared,
-      });
-    }
-  }
+    function updateVideoSendResolution(isPinned) {
+        let promise = null;
+        let mediaConstraints = {video: true};
 
-   */
+        if (isScreenShared) {
+            mediaConstraints = getMediaConstraints("fullHdConstraints", 25);
+            promise = webRTCAdaptor?.applyConstraints(mediaConstraints);
+        } else if (videoSendResolution === "auto" && !isPinned) {
+            mediaConstraints = getMediaConstraints("qvgaConstraints", 15);
+            promise = webRTCAdaptor?.applyConstraints(mediaConstraints);
+        } else if (videoSendResolution === "auto" && isPinned) {
+            mediaConstraints = getMediaConstraints("qvgaConstraints", 25);
+            promise = webRTCAdaptor?.applyConstraints(mediaConstraints);
+        } else if (videoSendResolution === "highDefinition") {
+            mediaConstraints = getMediaConstraints("hdConstraints", 15);
+            promise = webRTCAdaptor?.applyConstraints(mediaConstraints);
+        } else if (videoSendResolution === "standardDefinition") {
+            mediaConstraints = getMediaConstraints("vgaConstraints", 15);
+            promise = webRTCAdaptor?.applyConstraints(mediaConstraints);
+        } else if (videoSendResolution === "lowDefinition") {
+            mediaConstraints = getMediaConstraints("qvgaConstraints", 15);
+            promise = webRTCAdaptor?.applyConstraints(mediaConstraints);
+        } else {
+            console.error("Unknown camera resolution: " + videoSendResolution);
+        }
+
+        if (promise !== null) {
+            promise?.then(() => {
+                console.info("Camera resolution is updated to " + videoSendResolution + " mode");
+                let videoTrackSettings = webRTCAdaptor?.mediaManager?.localStream?.getVideoTracks()[0]?.getSettings();
+                console.info("Video track resolution: ", videoTrackSettings?.width, "x", videoTrackSettings?.height, " frame rate: ", videoTrackSettings?.frameRate);
+            }).catch(err => {
+                setVideoSendResolution("auto");
+                console.error("Camera resolution is not updated to " + videoSendResolution + " mode. Error is " + err);
+                console.info("Trying to update camera resolution to auto");
+            });
+        }
+    }
 
   function removeAllRemoteParticipants() {
     let newVideoTrack = {
       id: "localVideo",
-      videoLabel: "myVideo",
+      videoLabel: "localVideo",
       track: null,
       isCameraOn: false,
       streamId: publishStreamId,
@@ -1587,7 +1664,7 @@ function AntMedia() {
     setAllParticipants(allParticipantsTemp);
   }
 
-  function addMeAsParticipant() {
+  function addMeAsParticipant(publishStreamId) {
     let isParticipantExist = participants.find((p) => p.id === "localVideo");
 
     if(isParticipantExist) {
@@ -1596,7 +1673,7 @@ function AntMedia() {
 
     let newVideoTrack = {
       id: "localVideo",
-      videoLabel: "myVideo",
+      videoLabel: "localVideo",
       track: null,
       isCameraOn: false,
       streamId: publishStreamId,
@@ -1616,7 +1693,7 @@ function AntMedia() {
   function handlePublish(publishStreamId, token, subscriberId, subscriberCode) {
     let userStatusMetadata = getUserStatusMetadata(isMyMicMuted, !isMyCamTurnedOff, isScreenShared);
 
-    addMeAsParticipant();
+    addMeAsParticipant(publishStreamId);
 
     if (playOnly) {
         roomName = roomName + "listener";
@@ -1763,15 +1840,17 @@ function AntMedia() {
   function setSelectedDevices(devices) {
     if (devices.videoDeviceId !== null && devices.videoDeviceId !== undefined) {
       setSelectedCamera(devices.videoDeviceId);
+      localStorage.setItem("selectedCamera", devices.videoDeviceId);
     }
     if (devices.audioDeviceId !== null && devices.audioDeviceId !== undefined) {
       setSelectedMicrophone(devices.audioDeviceId);
+      localStorage.setItem("selectedMicrophone", devices.audioDeviceId);
     }
   }
 
   function cameraSelected(value) {
     if (selectedCamera !== value) {
-      setSelectedCamera(value);
+      setSelectedDevices({ videoDeviceId: value });
       // When we first open home page, React will call this function and local stream is null at that time.
       // So, we need to catch the error.
       try {
@@ -1783,7 +1862,7 @@ function AntMedia() {
   }
 
   function microphoneSelected(value) {
-    setSelectedMicrophone(value);
+    setSelectedDevices({audioDeviceId: value});
     // When we first open home page, React will call this function and local stream is null at that time.
     // So, we need to catch the error.
     try {
@@ -1947,17 +2026,30 @@ function AntMedia() {
             setMuteParticipantDialogOpen,
             participantIdMuted,
             setParticipantIdMuted,
+            videoSendResolution,
+            setVideoSendResolution,
             presenters,
             makeListenerAgain,
             makeParticipantUndoPresenter,
             approvedSpeakerRequestList,
             setPresenters,
             restBaseUrl,
-            admin,
             handlePublisherRequestListOpen,
             requestSpeakerList,
             publisherRequestListDrawerOpen,
-            isListener
+            isListener,
+            isAdmin,
+            roomName,
+            isFakeeh,
+            makeParticipantPresenter,
+            rejectSpeakerRequest,
+            approveBecomeSpeakerRequest,
+            resetAllParticipants,
+            displayNoVideoAudioDeviceFoundWarning,
+            getAllParticipants,
+            resetPartipants,
+            changeRoomName,
+            addBecomingPublisherRequest
           }}
         >
           <SnackbarProvider

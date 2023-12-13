@@ -62,27 +62,27 @@ function ParticipantTab(props) {
               <SvgIcon size={28} name="pin" color="black" />
             </PinBtn>
           )}
-          {(assignedVideoCardId === "localVideo" ? conference.presenters.includes(conference.publishStreamId) : conference.presenters.includes(assignedVideoCardId) )&& conference.admin === true ? (
+          {(assignedVideoCardId === "localVideo" ? conference.presenters.includes(conference.publishStreamId) : conference.presenters.includes(streamId) )&& conference.isAdmin == "true" ? (
               <PinBtn
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-                  onClick={() => conference.makeParticipantUndoPresenter(assignedVideoCardId)}
+                  onClick={() => conference.makeParticipantUndoPresenter(streamId)}
               >
                 <SvgIcon size={28} name="unpresenter" color="black" />
               </PinBtn>
           ) : null}
-          {(assignedVideoCardId === "localVideo" ? !conference.presenters.includes(conference.publishStreamId) : !conference.presenters.includes(assignedVideoCardId) ) && ( !conference.approvedSpeakerRequestList.includes(assignedVideoCardId) ) && conference.admin === true ?(
+          {(assignedVideoCardId === "localVideo" ? !conference.presenters.includes(conference.publishStreamId) : !conference.presenters.includes(streamId) ) && ( !conference.approvedSpeakerRequestList.includes(streamId) ) && conference.isAdmin == "true" ?(
               <PinBtn
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-                  onClick={() => conference.makeParticipantPresenter(assignedVideoCardId)}
+                  onClick={() => conference.makeParticipantPresenter(streamId)}
               >
                 {/* this icon for publish speaker */}
                 <SvgIcon size={28} name="presenter" color="black" />
               </PinBtn>
           ) : null}
-          {conference.approvedSpeakerRequestList.includes(assignedVideoCardId) && conference.admin === true  && assignedVideoCardId !== 'localVideo' ?(
+          {conference.approvedSpeakerRequestList.includes(streamId) && conference.isAdmin == "true"  && assignedVideoCardId !== 'localVideo' ?(
               <PinBtn
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
-                  onClick={() => conference.makeListenerAgain(assignedVideoCardId)}
+                  onClick={() => conference.makeListenerAgain(streamId)}
               >
                 <SvgIcon size={28} name="close" color="black" />
               </PinBtn>

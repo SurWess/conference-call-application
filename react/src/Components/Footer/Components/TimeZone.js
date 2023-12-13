@@ -25,7 +25,7 @@ function TimeZone(props) {
         <Typography color="#FF0000" variant="h6">
           Live
         </Typography>) : null}
-        <Typography color="#ffffff" variant="h6">
+        <Typography color="black" variant="h6">
           {currentTime}
         </Typography>
       </div>
