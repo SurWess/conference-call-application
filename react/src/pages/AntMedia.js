@@ -176,7 +176,7 @@ function AntMedia() {
 
   const [publisherRequestListDrawerOpen, setPublisherRequestListDrawerOpen] = useState(false);
 
-    const [publishStreamId, setPublishStreamId] = useState(InitialStreamId);
+  const [publishStreamId, setPublishStreamId] = useState(InitialStreamId);
 
   // this is my own name when i enter the room.
   const [streamName, setStreamName] = useState(getRootAttribute("stream-name"));
