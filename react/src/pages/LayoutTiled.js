@@ -81,6 +81,16 @@ function LayoutTiled(props) {
         {
           playingParticipants.map((element, index) => {
             //console.log("cw:"+cardWidth+" ch:"+cardHeight);
+            let isPlayOnly
+            try {
+              isPlayOnly = JSON.parse(conference?.allParticipants[element?.streamId]?.metaData)?.isPlayOnly;
+            } catch (e) {
+              isPlayOnly = false;
+            }
+
+            if (element.name === "" || isPlayOnly) {
+              return null;
+            }
             return (
               <div
                   className="single-video-container not-pinned"

@@ -56,6 +56,8 @@ var subscriberCode = getUrlParameter("subscriberCode");
 var scrollThreshold = -Infinity;
 var scroll_down = true;
 var last_warning_time = null;
+let makeOnlyDataChannelPublisher = false;
+let makePublisherOnlyDataChannel = false;
 
 var admin;// = getRootAttribute("admin"); FIXME
 if (!admin) {
@@ -166,7 +168,7 @@ function AntMedia() {
   const {t} = useTranslation();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
-  var roomName = id;
+  var roomName = id; //getUrlParameter("roomName");
 
     // drawerOpen for message components.
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
@@ -258,6 +260,7 @@ function AntMedia() {
 
   const [talkers, setTalkers] = useState([]);
   const [isPublished, setIsPublished] = useState(false);
+  const [isPlayStarted, setIsPlayStarted] = useState(false);
   const [selectedCamera, setSelectedCamera] = React.useState(localStorage.getItem('selectedCamera'));
   const [selectedMicrophone, setSelectedMicrophone] = React.useState(localStorage.getItem('selectedMicrophone'));
   const [selectedBackgroundMode, setSelectedBackgroundMode] = React.useState("");
@@ -482,7 +485,6 @@ function AntMedia() {
             headers: { 'Content-Type': 'application/json' },
         };
 
-
         fetch(baseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + streamId, requestOptions2).then((response) => response.json()).then((result) => {
 
             console.log("make participant undo presenter result: " + result.success);
@@ -492,7 +494,8 @@ function AntMedia() {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mainTrackStreamId: roomName
+                    mainTrackStreamId: roomName,
+                    metaData: allParticipants[streamId].metaData
                 })
             };
 
@@ -504,17 +507,26 @@ function AntMedia() {
                     presenters.splice(presenters.indexOf(streamId), 1);
                     var newPresenters = [...presenters];
                     setPresenters(newPresenters);
-                    handleSendMessage("admin*listener_room*"+streamId+"*STOP_PLAYING");
-                    let command = {
+                  let command = {
+                    "eventType": "STOP_PLAYING",
+                    "streamId": streamId,
+                  }
+                  const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(command)
+                  };
+                  fetch( baseUrl+ "/rest/v2/broadcasts/" + streamId + "/data", requestOptions).then(() => {});
+                    let command2 = {
                         "eventType": "BROADCAST_OFF",
                         "streamId": streamId,
                     }
-                    const requestOptions = {
+                    const requestOptions2 = {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(command)
+                        body: JSON.stringify(command2)
                     };
-                    fetch( baseUrl+ "/rest/v2/broadcasts/" + streamId + "/data", requestOptions).then(() => {});
+                    fetch( baseUrl+ "/rest/v2/broadcasts/" + streamId + "/data", requestOptions2).then(() => {});
                 });
             });
 
@@ -564,7 +576,7 @@ function AntMedia() {
             if (recreateAdaptor && webRTCAdaptorAdminOnly == null && admin === "true") {
                 setWebRTCAdaptorAdminOnly(new WebRTCAdaptor({
                     websocket_url: websocketURL,
-                    mediaConstraints: mediaConstraints,
+                    mediaConstraints: {video: false, audio: false},
                     onlyDataChannel: true,
                     debug: true,
                     callback: (info, obj) => {
@@ -574,9 +586,9 @@ function AntMedia() {
                                 if (notificationEvent != null && typeof notificationEvent == "object") {
                                     let eventStreamId = notificationEvent.streamId;
                                     let eventType = notificationEvent.eventType;
-                                    if (eventType === "REQUEST_PUBLISH" && admin === true) {
+                                    if (eventType === "REQUEST_PUBLISH" && admin == "true") {
                                         console.log("webrtc publish request is received from attendee with streamId: " + eventStreamId);
-                                        handleSendMessageAdmin("admin*listener_room*"+eventStreamId+"*GRANT_BECOME_PUBLISHER");
+                                        addBecomingPublisherRequest(eventStreamId);
                                     }
                                 }
                             } catch (e) {}
@@ -656,7 +668,6 @@ function AntMedia() {
       webRTCAdaptor.switchVideoCameraCapture(publishStreamId, selectedDevices.videoDeviceId);
     }
     if (webRTCAdaptor !== null && (currentAudioDeviceId !== selectedDevices.audioDeviceId || selectedDevices.audioDeviceId === 'default') && typeof publishStreamId != 'undefined') {
-        debugger;
       webRTCAdaptor.switchAudioInputSource(publishStreamId, selectedDevices.audioDeviceId);
     }
   }
@@ -673,23 +684,20 @@ function AntMedia() {
   }
 
   function joinRoom(roomName, generatedStreamId, roomJoinMode) {
-      if (playOnly) {
-          roomName = roomName + "listener";
-      }
     room = roomName;
     roomOfStream[generatedStreamId] = room;
 
     globals.maxVideoTrackCount = 6; //FIXME
     setPublishStreamId(generatedStreamId);
 
-    if (!playOnly) {
+    //if (!playOnly) {
       handlePublish(
         generatedStreamId,
         publishToken,
         subscriberId,
         subscriberCode
       );
-    }
+    //}
 
     webRTCAdaptor.play(roomName, playToken, roomName, null, subscriberId, subscriberCode);
   }
@@ -766,6 +774,7 @@ function AntMedia() {
   function handleMainTrackBroadcastObject(broadcastObject) {
     let participantIds = broadcastObject.subTrackStreamIds;
 
+    let tempParticipants = participants;
     //find and remove not available tracks
     const temp = allParticipants;
     let currentTracks = Object.keys(temp);
@@ -780,17 +789,24 @@ function AntMedia() {
           setPinnedVideoId(undefined);
         }
 
+        participants.forEach((p, index) => {
+          if (p.streamId === trackId) {
+            tempParticipants.splice(index, 1);
+          }
+        });
+
         delete temp[trackId];
       }
     });
+    setParticipants(tempParticipants);
     setAllParticipants(temp);
     setParticipantUpdated(!participantUpdated);
 
     //request broadcast object for new tracks
     participantIds.forEach(pid => {
-      if (allParticipants[pid] === undefined) {
+      //if (allParticipants[pid] === undefined) {
         webRTCAdaptor.getBroadcastObject(pid);
-      }
+      //}
     });
   }
 
@@ -827,7 +843,7 @@ function AntMedia() {
         setWebRTCAdaptor(new WebRTCAdaptor({
           websocket_url: websocketURL,
           mediaConstraints: mediaConstraints,
-          isPlayMode: playOnly,
+          onlyDataChannel: playOnly,
           debug: true,
           callback: infoCallback,
           callbackError: errorCallback
@@ -876,6 +892,7 @@ function AntMedia() {
       webRTCAdaptor.enableStats(publishStreamId);
     } else if (info === "publish_finished") {
       //stream is being finished
+      setIsPublished(false);
     }
     else if (info === "session_restored") {
       console.log("**** session_restored:" + reconnecting);
@@ -887,6 +904,7 @@ function AntMedia() {
     }
     else if (info === "play_started") {
       console.log("**** play started:" + reconnecting);
+      setIsPlayStarted(true);
 
       roomName = obj.streamId;
       webRTCAdaptor.getBroadcastObject(roomName);
@@ -896,11 +914,27 @@ function AntMedia() {
         reconnecting = !(publishReconnected && playReconnected);
         return;
       }
-    } else if (info === "screen_share_stopped") {
+    }
+    else if (info === "play_finished") {
+      console.log("**** play finished:" + reconnecting);
+      setIsPlayStarted(false);
+    }
+    else if (info === "screen_share_stopped") {
       handleScreenshareNotFromPlatform();
     } else if (info === "screen_share_started") {
       screenShareOnNotification();
     } else if (info === "data_received") {
+        try {
+            let notificationEvent = JSON.parse(obj.data);
+            if (notificationEvent != null && typeof notificationEvent == "object") {
+                let eventStreamId = notificationEvent.streamId;
+                let eventType = notificationEvent.eventType;
+                if (eventType === "REQUEST_PUBLISH" && admin == "true") {
+                    console.log("webrtc publish request is received from attendee with streamId: " + eventStreamId);
+                    handleSendMessageAdmin("admin*listener_room*"+eventStreamId+"*GRANT_BECOME_PUBLISHER");
+                }
+            }
+        } catch (e) {}
       try {
         handleNotificationEvent(obj);
       } catch (e) { }
@@ -1294,6 +1328,36 @@ function AntMedia() {
     }
   }, [closeScreenShare]);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (isPublished || isPlayStarted || webRTCAdaptor == null) {
+      return;
+    }
+    if (makeOnlyDataChannelPublisher)
+    {
+      makeOnlyDataChannelPublisher = false;
+      playOnly = false;
+      setIsListener(false);
+      removeAllRemoteParticipants();
+      webRTCAdaptor.onlyDataChannel = false;
+      roomName = roomName.replace("listener", "");
+      //webRTCAdaptor.changeRoomName(newRoom);
+      joinRoom(roomName, publishStreamId, "legacy");
+    } else if (makePublisherOnlyDataChannel) {
+      makePublisherOnlyDataChannel = false;
+      playOnly = true;
+      setIsListener(true);
+      webRTCAdaptor.onlyDataChannel = true;
+      removeAllRemoteParticipants();
+      roomName = roomName + "listener";
+      //webRTCAdaptor.changeRoomName(newRoom);
+      joinRoom(roomName, publishStreamId, "legacy");
+    }
+    else if (webRTCAdaptorAdminOnly != null && admin === "true") {
+      console.log("admin left the room");
+      webRTCAdaptorAdminOnly.stop(room + "listener");
+    }
+  }, [isPublished, isPlayStarted]);  // eslint-disable-line react-hooks/exhaustive-deps
+
   function scrollToBottom() {
     let objDiv = document.getElementById("paper-props");
     if (objDiv && scroll_down && objDiv.scrollHeight > objDiv.clientHeight) {
@@ -1342,8 +1406,10 @@ function AntMedia() {
                 } else if (message === "clearme") {
                     setMessages([]);
                     return;
+                } else if (message === "refreshme") {
+                  refreshRoom();
+                  return;
                 }
-
 
                 webRTCAdaptor.sendData(
                     publishStreamId,
@@ -1460,6 +1526,74 @@ function AntMedia() {
           }
         });
       }
+      else if (eventType === "GRANT_BECOME_PUBLISHER"/* && webRTCAdaptor.*/ && eventStreamId === publishStreamId)
+      {
+          navigator.mediaDevices
+              .enumerateDevices()
+              .then((devices) => {
+                  let audioInputDevices = [];
+                  let videoInputDevices = [];
+                  devices.forEach((device) => {
+                      if (device.kind === "audioinput") {
+                          audioInputDevices.push(device);
+                      } else if (device.kind === "videoinput") {
+                          videoInputDevices.push(device);
+                      }
+                      console.log(`${device.kind}: ${device.label} id = ${device.deviceId}`);
+                  });
+                  if (audioInputDevices.length > 0 && videoInputDevices.length > 0)
+                  {
+                      makeOnlyDataChannelPublisher = true;
+                      makePublisherOnlyDataChannel = false;
+                      let tempPublishStreamId = publishStreamId + "tempPublisher";
+                      setPublishStreamId(tempPublishStreamId);
+                      webRTCAdaptor.leaveFromRoom(roomName);
+                  } else {
+                      webRTCAdaptor.displayNoVideoAudioDeviceFoundWarning();
+                  }
+              })
+              .catch((err) => {
+                  console.error(`${err.name}: ${err.message}`);
+              });
+      }
+      else if (eventType == "REJECT_SPEAKER_REQUEST" && webRTCAdaptor.onlyDataChannel && eventStreamId === publishStreamId)
+      {
+          window.showNotification(
+              'Your request to join the room is rejected by the host'
+          );
+      }
+      else if (eventType === "MAKE_LISTENER_AGAIN" && !webRTCAdaptor.onlyDataChannel && eventStreamId === publishStreamId) {
+          makePublisherOnlyDataChannel = true;
+          makeOnlyDataChannelPublisher = false;
+          setIsBroadcasting(false);
+          let tempPublishStreamId = publishStreamId.replace('tempPublisher', '');
+          setPublishStreamId(tempPublishStreamId);
+          handleLeaveFromRoom();
+      }
+      else if (eventType === "STOP_PLAYING" && webRTCAdaptor.onlyDataChannel) {
+        webRTCAdaptor.stop(eventStreamId);
+        let tempAllParticipants = allParticipants;
+
+        delete tempAllParticipants[eventStreamId];
+
+        setAllParticipants(tempAllParticipants);
+
+        let tempParticipants = participants;
+
+        let participantIdCounter = 0;
+        let participantId = null;
+        tempParticipants.forEach((p) => {
+          if (p.streamId === eventStreamId) {
+            participantId = participantIdCounter;
+            return;
+          }
+          participantIdCounter = participantIdCounter + 1;
+        });
+        if (participantId != null) {
+          tempParticipants.splice(participantId, 1);
+          setParticipants(tempParticipants);
+        }
+      }
       else if (eventType === "SCREEN_SHARED_ON") {
         let videoLab = participants.find((p) => p.streamId === eventStreamId)?.videoLabel;
 
@@ -1530,6 +1664,22 @@ function AntMedia() {
             }
           });
         });
+
+        let hostParticipantId = null;
+        let participantId = 0;
+
+        temp.forEach((p) => {
+          if (p.name === "Host") {
+            hostParticipantId = participantId;
+          }
+
+          participantId = participantId + 1;
+        });
+
+        if (hostParticipantId != null) {
+          temp.splice(hostParticipantId, 1);
+        }
+
         setParticipants(temp);
         setParticipantUpdated(!participantUpdated);
       }
@@ -1563,7 +1713,8 @@ function AntMedia() {
     let metadata = {
       isMicMuted: isMicMuted === null ? null : isMicMuted,
       isCameraOn: isCameraOn,
-      isScreenShared: isScreenShareActive
+      isScreenShared: isScreenShareActive,
+      isPlayOnly: playOnly
     }
 
     return metadata;
@@ -1585,12 +1736,20 @@ function AntMedia() {
     webRTCAdaptor?.stop(publishStreamId);
     webRTCAdaptor?.stop(roomName);
 
+    if (webRTCAdaptorAdminOnly != null && admin == "true") {
+      webRTCAdaptorAdminOnly?.stop(roomName + "listener");
+      webRTCAdaptorAdminOnly?.stop(publishStreamId + "admin");
+    }
+
+    // add mechanism to listen play finished event publish finished event
     try {
         webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
     } catch (e) {
         console.error("turnOffLocalCamera throws", e);
     }
-    setWaitingOrMeetingRoom("waiting");
+    if (!makePublisherOnlyDataChannel) {
+      setWaitingOrMeetingRoom("waiting");
+    }
   }
 
   // when user closes the tab or refreshes the page
@@ -1648,6 +1807,17 @@ function AntMedia() {
         }
     }
 
+  function refreshRoom() {
+    webRTCAdaptor?.getBroadcastObject(roomName);
+
+    var jsCmd = {
+      command: "getVideoTrackAssignmentsCommand",
+      streamId: roomName
+    }
+
+    webRTCAdaptor?.webSocketAdaptor.send(JSON.stringify(jsCmd));
+  }
+
   function removeAllRemoteParticipants() {
     let newVideoTrack = {
       id: "localVideo",
@@ -1666,7 +1836,7 @@ function AntMedia() {
     setParticipants(tempParticipants);
 
     let allParticipantsTemp = {};
-    if (!isListener) {
+    if (playOnly  === "false" || playOnly === false) {
         allParticipantsTemp[publishStreamId] = {name: "You"};
     }
     setAllParticipants(allParticipantsTemp);
@@ -1675,7 +1845,7 @@ function AntMedia() {
   function addMeAsParticipant(publishStreamId) {
     let isParticipantExist = participants.find((p) => p.id === "localVideo");
 
-    if(isParticipantExist || isListener) {
+    if(isParticipantExist || playOnly == "true" || playOnly === true) {
         return;
     }
 
@@ -1702,10 +1872,6 @@ function AntMedia() {
     let userStatusMetadata = getUserStatusMetadata(isMyMicMuted, !isMyCamTurnedOff, isScreenShared);
 
     addMeAsParticipant(publishStreamId);
-
-    if (playOnly) {
-        roomName = roomName + "listener";
-    }
 
     webRTCAdaptor.publish(
       publishStreamId,

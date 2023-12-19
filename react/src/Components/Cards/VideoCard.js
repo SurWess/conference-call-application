@@ -125,6 +125,8 @@ function VideoCard(props) {
   }
   const micMuted = (isLocal) ? conference?.isMyMicMuted : parseMetaDataAndGetIsMicMuted(conference?.allParticipants[props?.streamId]?.metaData);
 
+  const isCamOpen = (isLocal) ? !conference?.isMyCamTurnedOff : parseMetaDataAndGetIsCameraOn(conference?.allParticipants[props?.streamId]?.metaData);
+
   const [isTalking, setIsTalking] = React.useState(false);
 
 
@@ -203,15 +205,65 @@ function VideoCard(props) {
               </Fab>
             </Tooltip>
 
-            {(props.id !== 'localVideo' && !micMuted) ?
+            { props.id !== 'localVideo' && conference.isAdmin && conference.isAdmin == "true" ?
               <Grid item>
+                {isCamOpen ?
+                  <Tooltip
+                    title={`Camera on ${
+                      props.name
+                    }`}
+                    placement="top"
+                  >
+                    <Fab
+                      onClick={()=>{
+                        //antmedia.handleSendMessage("admin*publisher_room*"+props.id+"*CLOSE_YOUR_CAMERA");
+                      }}
+                      color="primary"
+                      aria-label="add"
+                      size="small"
+                    >
+                      <SvgIcon
+                        size={36}
+                        name={"camera"}
+                        color={theme.palette.grey[80]}
+                      />
+                    </Fab>
+                  </Tooltip>
+                  :
+                  <Tooltip
+                    title={`Camera off ${
+                      props.name
+                    }`}
+                    placement="top"
+                  >
+                    <Fab
+                      color="error"
+                      aria-label="add"
+                      size="small"
+                    >
+                      <SvgIcon
+                        size={36}
+                        name={"camera-off"}
+                        color={theme.palette.grey[80]}
+                      />
+                    </Fab>
+                  </Tooltip>
+                }
+              </Grid>
+              : null }
+
+            {(props.id !== 'localVideo' && conference.isAdmin && conference.isAdmin == "true") ?
+              <Grid item>
+                {!micMuted ?
                 <Tooltip
-                  title={`Microphone off ${props.name
+                  title={`Microphone on ${props.name
                     }`}
                   placement="top"
                 >
                   <Fab
                     onClick={() => {
+                      // TODO: FIX THIS
+                      // antmedia.handleSendMessage("admin*publisher_room*"+props.id+"*CLOSE_YOUR_MICROPHONE");
                         let participant = {};
                         participant.streamId=props.streamId;
                         participant.streamName=props.name;
@@ -224,13 +276,35 @@ function VideoCard(props) {
                   >
                     <SvgIcon
                       size={36}
-                      name={"muted-microphone"}
+                      name={"microphone"}
                       color={theme.palette.grey[80]}
                     />
                   </Fab>
                 </Tooltip>
+                  : <Tooltip
+                    title={`Microphone off ${
+                      props.name
+                    }`}
+                    placement="top"
+                  >
+                    <Fab
+                      onClick={()=>{
+                        // TODO: FIX THIS
+                        //antmedia.handleSendMessage("admin*publisher_room*"+props.id+"*OPEN_YOUR_MICROPHONE");
+                      }}
+                      color="error"
+                      aria-label="add"
+                      size="small"
+                    >
+                      <SvgIcon
+                        size={36}
+                        name={"muted-microphone"}
+                        color={theme.palette.grey[80]}
+                      />
+                    </Fab>
+                  </Tooltip> }
               </Grid>
-              : null}
+              : null }
           </Grid>
         </Grid>
       </Grid>

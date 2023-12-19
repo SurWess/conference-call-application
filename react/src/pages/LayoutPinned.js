@@ -57,6 +57,17 @@ function LayoutPinned (props) {
         if(element !== pinnedParticipant && playingParticipantsCount < maxPlayingParticipantsCount) {
           playingParticipantsCount ++;
           playingParticipants.push(element);
+
+          let isPlayOnly
+          try {
+            isPlayOnly = JSON.parse(conference?.allParticipants[element?.streamId]?.metaData)?.isPlayOnly;
+          } catch (e) {
+            isPlayOnly = false;
+          }
+
+          if (element.name === "" || isPlayOnly) {
+            return null;
+          }
           return (
               <div className="unpinned" key={index}>
                 <div className="single-video-container">
