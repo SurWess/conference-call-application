@@ -49,8 +49,6 @@ function getPublishToken() {
 var playToken = getPlayToken();
 var publishToken = getPublishToken();
 var mcuEnabled = getUrlParameter("mcuEnabled");
-var InitialStreamId = getUrlParameter("streamId");
-var playOnly = getUrlParameter("playOnly");
 var subscriberId = getUrlParameter("subscriberId");
 var subscriberCode = getUrlParameter("subscriberCode");
 var scrollThreshold = -Infinity;
@@ -58,11 +56,6 @@ var scroll_down = true;
 var last_warning_time = null;
 let makeOnlyDataChannelPublisher = false;
 let makePublisherOnlyDataChannel = false;
-
-var admin;// = getRootAttribute("admin"); FIXME
-if (!admin) {
-    admin = getUrlParameter("admin");
-}
 
 var videoQualityConstraints = {
     video: {
@@ -132,13 +125,33 @@ if (!websocketURL) {
 
 var fullScreenId = -1;
 
+var InitialStreamId = getRootAttribute("publish-stream-id");
+if (!InitialStreamId) {
+  InitialStreamId = getUrlParameter("streamId");
+}
+
+var admin = getRootAttribute("admin");
+if (!admin) {
+  admin = getUrlParameter("admin");
+}
+
+var observerMode = getUrlParameter("observerMode");
+
+var onlyDataChannel = getRootAttribute("only-data-channel");
+if (!onlyDataChannel) {
+  onlyDataChannel = getUrlParameter("onlyDataChannel");
+}
+
 if (mcuEnabled == null) {
   mcuEnabled = false;
 }
 
-if (playOnly == null) {
-  playOnly = false;
+var playOnly = getRootAttribute("play-only");
+if (!playOnly) {
+  playOnly = getUrlParameter("playOnly");
 }
+
+playOnly = onlyDataChannel;
 
 if (playToken == null || typeof playToken === "undefined") {
   playToken = "";
@@ -152,6 +165,17 @@ var tokenPublishAdmin = getRootAttribute("token-publish-admin");
 if (!tokenPublishAdmin) {
     tokenPublishAdmin = getUrlParameter("tokenPublishAdmin");
 }
+
+var tokenPlay = getRootAttribute("token-play");
+if (!tokenPlay) {
+  tokenPlay = getUrlParameter("tokenPlay");
+}
+
+var tokenPublish = getRootAttribute("token-publish");
+if (!tokenPublish) {
+  tokenPublish = getUrlParameter("tokenPublish");
+}
+
 
 var roomOfStream = [];
 
