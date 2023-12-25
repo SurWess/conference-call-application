@@ -216,7 +216,11 @@ function VideoCard(props) {
                   >
                     <Fab
                       onClick={()=>{
-                        //antmedia.handleSendMessage("admin*publisher_room*"+props.id+"*CLOSE_YOUR_CAMERA");
+                        let participant = {};
+                        participant.streamId=props.streamId;
+                        participant.streamName=props.name;
+                        conference?.setParticipantIdMuted(participant);
+                        conference?.turnOffYourCamNotification(participant.streamId);
                       }}
                       color="primary"
                       aria-label="add"
@@ -262,13 +266,11 @@ function VideoCard(props) {
                 >
                   <Fab
                     onClick={() => {
-                      // TODO: FIX THIS
-                      // antmedia.handleSendMessage("admin*publisher_room*"+props.id+"*CLOSE_YOUR_MICROPHONE");
                         let participant = {};
                         participant.streamId=props.streamId;
                         participant.streamName=props.name;
-                      conference?.setParticipantIdMuted(participant);
-                        conference?.setMuteParticipantDialogOpen(true);
+                        conference?.setParticipantIdMuted(participant);
+                        conference?.turnOffYourMicNotification(participant.streamId);
                     }}
                     color="primary"
                     aria-label="add"
@@ -289,8 +291,11 @@ function VideoCard(props) {
                   >
                     <Fab
                       onClick={()=>{
-                        // TODO: FIX THIS
-                        //antmedia.handleSendMessage("admin*publisher_room*"+props.id+"*OPEN_YOUR_MICROPHONE");
+                        let participant = {};
+                        participant.streamId=props.streamId;
+                        participant.streamName=props.name;
+                        conference?.setParticipantIdMuted(participant);
+                        conference?.turnOnYourMicNotification(participant.streamId);
                       }}
                       color="error"
                       aria-label="add"

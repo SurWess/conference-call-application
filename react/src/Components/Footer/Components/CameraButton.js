@@ -43,10 +43,6 @@ function CameraButton(props) {
     if (!conference.isScreenShared) {
       if (conference.publishStreamId) {
         conference.checkAndTurnOffLocalCamera(conference.publishStreamId);
-        conference.handleSendNotificationEvent(
-          "CAM_TURNED_OFF",
-          conference.publishStreamId
-        );
       } else {
         // if local
         conference.checkAndTurnOffLocalCamera("localVideo");

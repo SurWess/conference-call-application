@@ -17,7 +17,7 @@ import { getUrlParameter } from "@antmedia/webrtc_adaptor";
 import { SvgIcon } from "../Components/SvgIcon";
 import ParticipantListDrawer from "../Components/ParticipantListDrawer";
 
-import {getRoomNameAttribute, getRootAttribute, getWebSocketURLAttribute} from "../utils";
+import {getRoomNameAttribute, getRootAttribute, getWebSocketURLAttribute} from "../utils.js";
 import floating from "../external/floating.js";
 import {useTranslation} from "react-i18next";
 import PublisherRequestListDrawer from "../Components/PublisherRequestListDrawer";
@@ -135,8 +135,6 @@ if (!admin) {
   admin = getUrlParameter("admin");
 }
 
-var observerMode = getUrlParameter("observerMode");
-
 var onlyDataChannel = getRootAttribute("only-data-channel");
 if (!onlyDataChannel) {
   onlyDataChannel = getUrlParameter("onlyDataChannel");
@@ -152,6 +150,10 @@ if (!playOnly) {
 }
 
 playOnly = onlyDataChannel;
+
+if (playOnly == null || typeof playOnly === "undefined") {
+  playOnly = false;
+}
 
 if (playToken == null || typeof playToken === "undefined") {
   playToken = "";
@@ -317,7 +319,6 @@ function AntMedia() {
     const [speedTestBeforeLoginModal, setSpeedTestBeforeLoginModal] = useState(false);
 
     const [messages, setMessages] = useState([]);
-    const [observerMode, setObserverMode] = useState(false);
 
     // video send resolution for publishing
     // possible values: "auto", "highDefinition", "standartDefinition", "lowDefinition"
@@ -556,10 +557,6 @@ function AntMedia() {
 
 
         });
-    }
-
-    function turnObserverModeOn() {
-        setObserverMode(true);
     }
 
     function handleSendMessageAdmin(message) {
@@ -1256,6 +1253,28 @@ function AntMedia() {
     );
   }
 
+  function turnOnYourMicNotification(participantId) {
+    handleSendNotificationEvent(
+      "TURN_YOUR_MIC_ON",
+      publishStreamId,
+      {
+        streamId: participantId,
+        senderStreamId: publishStreamId
+      }
+    );
+  }
+
+  function turnOffYourCamNotification(participantId) {
+    handleSendNotificationEvent(
+      "TURN_YOUR_CAM_OFF",
+      publishStreamId,
+      {
+        streamId: participantId,
+        senderStreamId: publishStreamId
+      }
+    );
+  }
+
   function sendReactions(reaction) {
     handleSendNotificationEvent(
         "REACTIONS",
@@ -1643,6 +1662,18 @@ function AntMedia() {
         if (publishStreamId === notificationEvent.streamId) {
           console.warn(notificationEvent.senderStreamId, "muted you");
           muteLocalMic();
+        }
+      }
+      else if (eventType === "TURN_YOUR_MIC_ON") {
+        if (publishStreamId === notificationEvent.streamId) {
+          console.warn(notificationEvent.senderStreamId, "turns your mic on");
+          unmuteLocalMic();
+        }
+      }
+      else if (eventType === "TURN_YOUR_CAM_OFF") {
+        if (publishStreamId === notificationEvent.streamId) {
+          console.warn(notificationEvent.senderStreamId, "closed your cam");
+          checkAndTurnOffLocalCamera(publishStreamId);
         }
       }
       else if (eventType === "PIN_USER") {
@@ -2215,6 +2246,8 @@ function AntMedia() {
             screenShareOffNotification,
             handleSendMessage,
             turnOffYourMicNotification,
+            turnOnYourMicNotification,
+            turnOffYourCamNotification,
             addFakeParticipant,
             removeFakeParticipant,
             assignVideoToStream,
@@ -2249,7 +2282,10 @@ function AntMedia() {
             getAllParticipants,
             resetPartipants,
             changeRoomName,
-            addBecomingPublisherRequest
+            addBecomingPublisherRequest,
+            handleSendMessageAdmin,
+            speedTestBeforeLogin,
+            setSpeedTestBeforeLogin
           }}
         >
           <SnackbarProvider
