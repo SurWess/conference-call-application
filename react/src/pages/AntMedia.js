@@ -1613,7 +1613,7 @@ function AntMedia() {
           setPublishStreamId(tempPublishStreamId);
           handleLeaveFromRoom();
       }
-      else if (eventType === "STOP_PLAYING" && webRTCAdaptor.onlyDataChannel) {
+      /* else if (eventType === "STOP_PLAYING" && webRTCAdaptor.onlyDataChannel) {
         webRTCAdaptor.stop(eventStreamId);
         let tempAllParticipants = allParticipants;
 
@@ -1636,7 +1636,7 @@ function AntMedia() {
           tempParticipants.splice(participantId, 1);
           setParticipants(tempParticipants);
         }
-      }
+      }*/
       else if (eventType === "SCREEN_SHARED_ON") {
         let videoLab = participants.find((p) => p.streamId === eventStreamId)?.videoLabel;
 
