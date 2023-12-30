@@ -819,6 +819,25 @@ function AntMedia() {
     }
   }
   function handleLeaveFromRoom() {
+    /*
+     Problem 4: If participant is published into the listener room and leaves the publisher room, publisher's sub-track isn't removed from the publisher room's broadcast object.
+     Solution: Publisher removes itself from both of the rooms sub-tracks before leave.
+     */
+    if (isBroadcasting) {
+      var requestOption0 = {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      };
+      var requestOption1 = {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      };
+
+      // If we are broadcasting, we need to leave from the both of the room and then, stop the broadcast
+      fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName+ "listener/subtrack?id=" + myLocalData?.streamId, requestOption0);
+      fetch( restBaseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + myLocalData?.streamId, requestOption1);
+      fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName + "/subtrack?id=" + myLocalData?.streamId, requestOption0);
+    }
     // we need to empty participant array. i f we are going to leave it in the first place.
     setParticipants([]);
     antmedia?.leaveFromRoom(roomName);
