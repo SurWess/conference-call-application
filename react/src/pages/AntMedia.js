@@ -790,19 +790,20 @@ function AntMedia() {
     }
   }
   function setUserStatus(notificationEvent, eventStreamId) {
+    console.error("setUserStatus -> ", notificationEvent, " eventStreamId -> ", eventStreamId);
     if (notificationEvent.isScreenShared) {
       // if the participant was already pin someone than we should not update it
       if (!screenSharedVideoId) {
         setScreenSharedVideoId(eventStreamId);
-        let videoLab = participants.find((p) => p.id === eventStreamId)
+        let videoLab = participants.find((p) => p.streamId === eventStreamId)
           ?.videoLabel
-          ? participants.find((p) => p.id === eventStreamId).videoLabel
+          ? participants.find((p) => p.streamId === eventStreamId).videoLabel
           : "";
         pinVideo(eventStreamId, videoLab);
       }
     }
 
-    if (!isScreenShared && participants.find((p) => p.id === eventStreamId)) {
+    if (!isScreenShared && participants.find((p) => p.streamId === eventStreamId)) {
       if (!mic.find((m) => m.eventStreamId === eventStreamId)) {
         toggleSetMic({
           eventStreamId: eventStreamId,
@@ -852,6 +853,7 @@ function AntMedia() {
         isScreenShared: isScreenShared,
       });
     }
+    console.warn("updateStatus -> ", obj, " myLocalData -> ", myLocalData.streamId, " mic -> ", !!mic.find((c) => c.eventStreamId === "localVideo")?.isMicMuted, " cam -> ", !!cam.find((c) => c.eventStreamId === "localVideo")?.isCameraOn, " pinnedVideoId -> ", pinnedVideoId, " isScreenShared -> ", isScreenShared);
   }
   function handleSetMyObj(obj) {
     handleSetInitialMaxVideoTrackCount(obj.maxTrackCount);

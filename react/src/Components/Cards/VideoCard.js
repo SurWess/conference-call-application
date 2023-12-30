@@ -93,7 +93,7 @@ const VideoCard = memo(({ srcObject, hidePin, onHandlePin, ...props }) => {
   }, [props.track]);
 
   let isOff = mediaSettings?.cam?.find(
-    (c) => c.eventStreamId === props?.id && !c?.isCameraOn
+    (c) => c.eventStreamId === props?.streamId && !c?.isCameraOn
   );
 
   // if i sharing my screen.
@@ -108,15 +108,15 @@ const VideoCard = memo(({ srcObject, hidePin, onHandlePin, ...props }) => {
   }
   // screenSharedVideoId is the id of the screen share video.
   if (
-    mediaSettings.screenSharedVideoId === props?.id &&
+    mediaSettings.screenSharedVideoId === props?.streamId &&
     mediaSettings?.cam.find(
-      (c) => c.eventStreamId === props?.id && c.isCameraOn === false
+      (c) => c.eventStreamId === props?.streamId && c.isCameraOn === false
     )
   ) {
     isOff = false;
   }
-  const mic = mediaSettings?.mic?.find((m) => m.eventStreamId === props?.id);
-  const cam = mediaSettings?.cam?.find((c) => c.eventStreamId === props?.id);
+  const mic = mediaSettings?.mic?.find((m) => m.eventStreamId === props?.streamId);
+  const cam = mediaSettings?.cam?.find((c) => c.eventStreamId === props?.streamId);
 
 
   const [isTalking, setIsTalking] = React.useState(false);
@@ -126,7 +126,7 @@ const VideoCard = memo(({ srcObject, hidePin, onHandlePin, ...props }) => {
   const mirrorView = isLocal && !mediaSettings?.isScreenShared;
   const isScreenSharing =
     mediaSettings?.isScreenShared ||
-    mediaSettings?.screenSharedVideoId === props?.id;
+    mediaSettings?.screenSharedVideoId === props?.streamId;
   //mediaSettings?.isScreenShared means am i sharing my screen
   //mediaSettings?.screenSharedVideoId === props?.id means is someone else sharing their screen
 

@@ -257,6 +257,7 @@ const MeetingRoom = React.memo((props) => {
                             pinVideo("localVideo");
                           }}
                           id="localVideo"
+                          streamId="localVideo"
                           autoPlay
                           name="You"
                           muted
@@ -316,6 +317,7 @@ const MeetingRoom = React.memo((props) => {
                           pinVideo("localVideo");
                         }}
                         id="localVideo"
+                        streamId="localVideo"
                         autoPlay
                         name="You"
                         muted
@@ -373,6 +375,7 @@ const MeetingRoom = React.memo((props) => {
                               pinVideo("localVideo");
                             }}
                             id="localVideo"
+                            streamId="localVideo"
                             autoPlay
                             name="You"
                             muted
