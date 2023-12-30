@@ -46,9 +46,9 @@ const VideoCard = memo(({ srcObject, hidePin, onHandlePin, ...props }) => {
   );
 
   React.useEffect(() => {
-    if (props.track?.kind === "video" && !props.track.onended) 
+    if (props.track?.kind === "video" && !props.track.onended)
     {
-      props.track.onended = (event) => 
+      props.track.onended = (event) =>
       {
         console.log("props.track.onended: ", props.track);
 
@@ -58,26 +58,26 @@ const VideoCard = memo(({ srcObject, hidePin, onHandlePin, ...props }) => {
         * I've commented out the following if statement because
         * when there is less participants than the maxVideoTrackCount,
         * so the video is not removed.
-        * 
+        *
         * Reproduce scenario
         * - Publish 3 streams(participants) to the room
         * - Remove one of the streams(participant) from the room. Make one participant left
         * - The other participants in the room sees the video is black
-        * 
+        *
         * mekya
         */
-        //if (participants.length > settings?.globals?.maxVideoTrackCount) 
+        //if (participants.length > settings?.globals?.maxVideoTrackCount)
         {
 
           console.log("video before: " + JSON.stringify(participants));
-    
+
           setParticipants((oldParts) => {
             return oldParts.filter(
               /*
                * the meaning of the following line is that it does not render the video track that videolabel equals the id in the list
                * because the video track is not assigned.
-               * 
-               * 
+               *
+               *
                */
               (p) => !(p.id === props.id || p.videoLabel === props.id)
             );
@@ -140,10 +140,13 @@ const VideoCard = memo(({ srcObject, hidePin, onHandlePin, ...props }) => {
           timeoutRef.current = setTimeout(() => {
             setIsTalking(false);
           }, 1000);
+          /*
           antmedia.updateAudioLevel(
             mediaSettings?.myLocalData?.streamId,
             Math.floor(value * 100)
           );
+
+           */
         }
       }, 100);
     } else if (isLocal && antmedia.onlyDataChannel) {
