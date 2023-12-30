@@ -64,10 +64,6 @@ function Footer(props) {
                   </Grid>
                       : null}
 
-                  <Grid item xs={0}>
-                    <MessageButton footer/>
-                  </Grid>
-
                   {antmedia.onlyDataChannel === false ?
                   <Grid item xs={0}>
                     {" "}
