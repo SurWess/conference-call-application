@@ -818,7 +818,7 @@ function AntMedia() {
       }
     }
   }
-  function handleLeaveFromRoom() {
+  async function handleLeaveFromRoom() {
     /*
      Problem 4: If participant is published into the listener room and leaves the publisher room, publisher's sub-track isn't removed from the publisher room's broadcast object.
      Solution: Publisher removes itself from both of the rooms sub-tracks before leave.
@@ -829,25 +829,44 @@ function AntMedia() {
         headers: { 'Content-Type': 'application/json' },
       };
       var requestOption1 = {
-        method: 'DELETE',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+      };
+      var requestOption2 = {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mainTrackStreamId: roomName
+        })
       };
 
       // If we are broadcasting, we need to leave from the both of the room and then, stop the broadcast
-      fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName+ "listener/subtrack?id=" + myLocalData?.streamId, requestOption0);
-      fetch( restBaseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + myLocalData?.streamId, requestOption1);
-      fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName + "/subtrack?id=" + myLocalData?.streamId, requestOption0);
+      await fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + myLocalData?.streamId, requestOption0);
+      await fetch(restBaseUrl + "/rest/v2/broadcasts/" + myLocalData?.streamId, requestOption2)
+      await fetch( restBaseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + myLocalData?.streamId, requestOption1);
     }
-    // we need to empty participant array. i f we are going to leave it in the first place.
-    setParticipants([]);
-    antmedia?.leaveFromRoom(roomName);
-    antmedia?.turnOffLocalCamera(myLocalData?.streamId);
+
+    leaveFromRoomAndCleanParticipants();
+
     setWaitingOrMeetingRoom("waiting");
   }
 
-  useBeforeUnload((ev) => {
-    handleLeaveFromRoom();
+  useBeforeUnload(async (ev) => {
+    leaveFromRoomAndCleanParticipants();
   });
+
+  function leaveFromRoomAndCleanParticipants() {
+    if (antmedia?.admin === true && typeof antmediaadmin !== 'undefined') {
+      antmediaadmin?.leaveFromRoom(roomName + "listener");
+    }
+
+    // we need to empty participant array. i f we are going to leave it in the first place.
+    setParticipants([]);
+    antmedia?.leaveFromRoom(roomName);
+    if(antmedia.onlyDataChannel === false) {
+      antmedia?.turnOffLocalCamera(myLocalData?.streamId);
+    }
+  }
 
   function handleSendNotificationEvent(eventType, publishStreamId, info) {
     let notEvent = {
