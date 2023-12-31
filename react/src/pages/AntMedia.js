@@ -891,7 +891,6 @@ function AntMedia() {
         isScreenShared: isScreenShared,
       });
     }
-    console.warn("updateStatus -> ", obj, " myLocalData -> ", myLocalData.streamId, " mic -> ", !!mic.find((c) => c.eventStreamId === "localVideo")?.isMicMuted, " cam -> ", !!cam.find((c) => c.eventStreamId === "localVideo")?.isCameraOn, " pinnedVideoId -> ", pinnedVideoId, " isScreenShared -> ", isScreenShared);
   }
   function handleSetMyObj(obj) {
     handleSetInitialMaxVideoTrackCount(obj.maxTrackCount);
