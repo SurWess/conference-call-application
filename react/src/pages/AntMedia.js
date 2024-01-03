@@ -1928,7 +1928,9 @@ function AntMedia() {
 
   function refreshRoom() {
     webRTCAdaptor?.getBroadcastObject(roomName);
-    webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
+    if (!isListener) {
+      webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
+    }
   }
 
   function removeAllRemoteParticipants() {
