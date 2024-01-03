@@ -51,6 +51,7 @@ function RequestPublishButton(props) {
 
 
   const handlePublisherRequest = (e) => {
+    return;
     e.preventDefault();
 
     const baseUrl = conference.restBaseUrl;
