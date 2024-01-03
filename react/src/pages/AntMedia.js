@@ -194,7 +194,7 @@ function AntMedia() {
   const {t} = useTranslation();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
-  var roomName = id; //getUrlParameter("roomName");
+  var roomName = id;
 
     // drawerOpen for message components.
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
@@ -320,11 +320,22 @@ function AntMedia() {
 
     const [messages, setMessages] = useState([]);
 
+    const [presenterButtonDisabled, setPresenterButtonDisabled] = useState(false);
+
     // video send resolution for publishing
     // possible values: "auto", "highDefinition", "standartDefinition", "lowDefinition"
     const [videoSendResolution, setVideoSendResolution] = React.useState(localStorage.getItem("videoSendResolution") ? localStorage.getItem("videoSendResolution") : "auto");
 
+    React.useEffect(() => {
+      if(presenterButtonDisabled === true) {
+        setTimeout(() => {
+          setPresenterButtonDisabled(false);
+        }, 2000);
+      }
+    }, [presenterButtonDisabled]);
+
     function makeParticipantPresenter(id) {
+        setPresenterButtonDisabled(true);
         let streamId = id;
         if (streamId === 'localVideo' && publishStreamId !== null) {
             streamId = publishStreamId;
@@ -346,6 +357,7 @@ function AntMedia() {
                 fetch(baseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + streamId, requestOptions1)
                     .then((response) => { return response.json(); })
                     .then((data) => {
+                      setPresenterButtonDisabled(false);
                         presenters.push(streamId);
                         var newPresenters = [...presenters];
                         setPresenters(newPresenters);
@@ -495,6 +507,7 @@ function AntMedia() {
     }
 
     function makeParticipantUndoPresenter(id) {
+      setPresenterButtonDisabled(true);
         let streamId = id;
         if (streamId === 'localVideo') {
             streamId = publishStreamId;
@@ -529,6 +542,7 @@ function AntMedia() {
                 console.log("update subtrack result: " + result.success + " for stream: " + streamId);
 
                 fetch( baseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + streamId, requestOptions0).then(() => {
+                  setPresenterButtonDisabled(false);
                     presenters.splice(presenters.indexOf(streamId), 1);
                     var newPresenters = [...presenters];
                     setPresenters(newPresenters);
@@ -1780,7 +1794,40 @@ function AntMedia() {
     webRTCAdaptor.updateStreamMetaData(publishStreamId, JSON.stringify(metadata));
   }
 
-  function handleLeaveFromRoom() {
+  async function handleLeaveFromRoom() {
+    /*
+     Problem 4: If participant is published into the listener room and leaves the publisher room, publisher's sub-track isn't removed from the publisher room's broadcast object.
+     Solution: Publisher removes itself from both of the rooms sub-tracks before leave.
+     */
+    if (isBroadcasting) {
+      var requestOption0 = {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      };
+      var requestOption1 = {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+      };
+      var requestOption2 = {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mainTrackStreamId: roomName
+        })
+      };
+
+      // If we are broadcasting, we need to leave from the both of the room and then, stop the broadcast
+      await fetch(restBaseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + publishStreamId, requestOption0);
+      await fetch(restBaseUrl + "/rest/v2/broadcasts/" + publishStreamId, requestOption2)
+      await fetch( restBaseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + publishStreamId, requestOption1);
+    }
+
+    leaveFromRoomAndCleanParticipants();
+
+    setWaitingOrMeetingRoom("waiting");
+  }
+
+  function leaveFromRoomAndCleanParticipants() {
     // we need to empty participant array. if we are going to leave it in the first place.
     setParticipants([]);
     setAllParticipants({});
@@ -1798,19 +1845,16 @@ function AntMedia() {
 
     // add mechanism to listen play finished event publish finished event
     try {
-        webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
+      webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
     } catch (e) {
-        console.error("turnOffLocalCamera throws", e);
-    }
-    if (!makePublisherOnlyDataChannel) {
-      setWaitingOrMeetingRoom("waiting");
+      console.error("turnOffLocalCamera throws", e);
     }
   }
 
   // when user closes the tab or refreshes the page
   // we need to leave the room
   useBeforeUnload((ev) => {
-    handleLeaveFromRoom();
+    leaveFromRoomAndCleanParticipants();
   });
 
   function handleSendNotificationEvent(eventType, publishStreamId, info) {
@@ -2285,7 +2329,8 @@ function AntMedia() {
             addBecomingPublisherRequest,
             handleSendMessageAdmin,
             speedTestBeforeLogin,
-            setSpeedTestBeforeLogin
+            setSpeedTestBeforeLogin,
+            presenterButtonDisabled
           }}
         >
           <SnackbarProvider

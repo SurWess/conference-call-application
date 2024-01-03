@@ -44,6 +44,7 @@ function ParticipantTab(props) {
             </PinBtn>
           ) : (
             <PinBtn
+              disabled={conference?.presenterButtonDisabled}
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
               onClick={() => {
                 if (streamId === "localVideo") {
@@ -65,6 +66,7 @@ function ParticipantTab(props) {
           )}
           {(streamId === "localVideo" ? conference.presenters.includes(conference.publishStreamId) : conference.presenters.includes(streamId) )&& conference.isAdmin == "true" ? (
               <PinBtn
+                  disabled={conference?.presenterButtonDisabled}
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
                   onClick={() => {
                       let tempStreamId = streamId;
