@@ -2338,7 +2338,8 @@ function AntMedia() {
             handleSendMessageAdmin,
             speedTestBeforeLogin,
             setSpeedTestBeforeLogin,
-            presenterButtonDisabled
+            presenterButtonDisabled,
+            isBroadcasting
           }}
         >
           <SnackbarProvider
