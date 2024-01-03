@@ -113,13 +113,15 @@ if (!websocketURL) {
       restBaseUrl = window.location.protocol + "//" + path;
   }
   else {
-
       restBaseUrl = websocketURL.replace("ws", "http");
       //if it's wss, then it becomes https
-      restBaseUrl = restBaseUrl.replace("websocket", "");
   }
+    restBaseUrl = restBaseUrl.replace("websocket", "");
+
     //remove last slash
-    restBaseUrl = restBaseUrl.substring(0, restBaseUrl.length - 1);
+    if (restBaseUrl.endsWith("/")) {
+      restBaseUrl = restBaseUrl.substring(0, restBaseUrl.length - 1);
+    }
 
 }
 
@@ -391,7 +393,7 @@ function AntMedia() {
                             body: JSON.stringify(command)
                         };
 
-                        fetch( baseUrl+ "/rest/v2/broadcasts/" + streamId + "/data", requestOptions)
+                        fetch( baseUrl+ "/rest/v2/broadcasts/" + roomName + "/data", requestOptions)
                             .then((response) => { return response.json(); })
                             .then((data) => {
                                 if (!data.success) {
@@ -565,7 +567,7 @@ function AntMedia() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(command2)
                     };
-                    fetch( baseUrl+ "/rest/v2/broadcasts/" + streamId + "/data", requestOptions2).then(() => {});
+                    fetch( baseUrl+ "/rest/v2/broadcasts/" + roomName + "/data", requestOptions2).then(() => {});
                 });
             });
 
@@ -967,7 +969,13 @@ function AntMedia() {
                 if (eventType === "REQUEST_PUBLISH" && admin == "true") {
                     console.log("webrtc publish request is received from attendee with streamId: " + eventStreamId);
                     handleSendMessageAdmin("admin*listener_room*"+eventStreamId+"*GRANT_BECOME_PUBLISHER");
-                }
+                } else if (eventType === "BROADCAST_ON" && !webRTCAdaptor.onlyDataChannel && eventStreamId === publishStreamId) {
+                setIsBroadcasting(true);
+                console.log("BROADCAST_ON");
+              } else if (eventType === "BROADCAST_OFF" && !webRTCAdaptor.onlyDataChannel && eventStreamId === publishStreamId) {
+                setIsBroadcasting(false);
+                console.log("BROADCAST_OFF");
+              }
             }
         } catch (e) {}
       try {
