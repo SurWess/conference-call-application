@@ -846,8 +846,15 @@ function AntMedia() {
         webRTCAdaptor.getBroadcastObject(pid);
       //}
     });
-  }
 
+    // We need to wait 5 seconds to make sure that data channel connection is established and websocket connection is ready.
+    // Otherwise, our websocket connection will be closed.
+    if (!isListener) {
+      setTimeout(() => {
+        webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
+      }, 5000);
+    }
+  }
 
   function handleSubtrackBroadcastObject(broadcastObject) {
     if (broadcastObject.metaData !== undefined && broadcastObject.metaData !== null) {
@@ -1190,7 +1197,7 @@ function AntMedia() {
     if (pinnedVideoId === id) {
       setPinnedVideoId(undefined);
       handleNotifyUnpinUser(id);
-      webRTCAdaptor.assignVideoTrack(videoLabel, streamId, false);
+      //webRTCAdaptor.assignVideoTrack(videoLabel, streamId, false);
     }
     // if there is no pinned video we are gonna pin the targeted user.
     // and we need to inform pinned user.
@@ -1460,6 +1467,9 @@ function AntMedia() {
   }
 
     function handleSendMessage(message) {
+        if (isListener) {
+          webRTCAdaptor.getDebugInfo(roomName);
+        }
         if (publishStreamId) {
             let iceState = webRTCAdaptor.iceConnectionState(publishStreamId);
             if (
@@ -1918,13 +1928,7 @@ function AntMedia() {
 
   function refreshRoom() {
     webRTCAdaptor?.getBroadcastObject(roomName);
-
-    var jsCmd = {
-      command: "getVideoTrackAssignmentsCommand",
-      streamId: roomName
-    }
-
-    webRTCAdaptor?.webSocketAdaptor.send(JSON.stringify(jsCmd));
+    webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
   }
 
   function removeAllRemoteParticipants() {
@@ -1993,6 +1997,7 @@ function AntMedia() {
     );
 
     if (admin) {
+      let adminStatusMetadata = {isMicMuted: true, isCameraOn: false, isScreenShared: false, isPlayOnly: true};
         webRTCAdaptorAdminOnly.publish(
             publishStreamId + "admin",
             tokenPublishAdmin,
@@ -2000,7 +2005,7 @@ function AntMedia() {
             subscriberCode,
             "Host",
             roomName + "listener",
-            "{}" //TODO: fix this
+            JSON.stringify(adminStatusMetadata)
         );
     }
   }
