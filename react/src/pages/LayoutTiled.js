@@ -88,7 +88,7 @@ function LayoutTiled(props) {
               isPlayOnly = false;
             }
 
-            if (element.name === "" || isPlayOnly) {
+            if (/*element.name === "" || */isPlayOnly) {
               return null;
             }
             return (
