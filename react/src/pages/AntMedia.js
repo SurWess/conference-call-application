@@ -27,7 +27,7 @@ export const ConferenceContext = React.createContext(null);
 const globals = {
   //this settings is to keep consistent with the sdk until backend for the app is setup
   // maxVideoTrackCount is the tracks i can see excluding my own local video.so the use is actually seeing 3 videos when their own local video is included.
-  maxVideoTrackCount: 6,
+  maxVideoTrackCount: 60,
   trackEvents: [],
 };
 
@@ -724,7 +724,7 @@ function AntMedia() {
     room = roomName;
     roomOfStream[generatedStreamId] = room;
 
-    globals.maxVideoTrackCount = 6; //FIXME
+    globals.maxVideoTrackCount = 60; //FIXME
     setPublishStreamId(generatedStreamId);
 
     //if (!playOnly) {
