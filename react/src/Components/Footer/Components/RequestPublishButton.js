@@ -75,7 +75,7 @@ function RequestPublishButton(props) {
     };
     console.log("participant id to sent request is :" + participant);
 
-    fetch( baseUrl+ "/rest/v2/broadcasts/" + participant + "admin" + "/data", requestOptions).then((response) => { return response.json(); }) // FIXME
+    fetch( baseUrl+ "/rest/v2/broadcasts/" + participant + "admin/data", requestOptions).then((response) => { return response.json(); }) // FIXME
         .then((data) => {
 
       if (data.success) {
