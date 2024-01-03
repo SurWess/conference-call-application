@@ -194,7 +194,7 @@ function AntMedia() {
   const {t} = useTranslation();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const id = (getRoomNameAttribute()) ? getRoomNameAttribute() : useParams().id;
-  var roomName = id;
+  var roomName = getUrlParameter("roomName"); // BOLA Before: var roomName = id;
 
     // drawerOpen for message components.
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
