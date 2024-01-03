@@ -727,16 +727,17 @@ function AntMedia() {
     globals.maxVideoTrackCount = 60; //FIXME
     setPublishStreamId(generatedStreamId);
 
-    //if (!playOnly) {
+    if (playOnly) {
+      webRTCAdaptor.play(roomName, playToken, roomName, null, subscriberId, subscriberCode);
+    } else {
       handlePublish(
         generatedStreamId,
         publishToken,
         subscriberId,
         subscriberCode
       );
-    //}
+    }
 
-    webRTCAdaptor.play(roomName, playToken, roomName, null, subscriberId, subscriberCode);
   }
 
   async function checkDevices() {
@@ -880,7 +881,7 @@ function AntMedia() {
         setWebRTCAdaptor(new WebRTCAdaptor({
           websocket_url: websocketURL,
           mediaConstraints: mediaConstraints,
-          onlyDataChannel: playOnly,
+          playOnly: playOnly,
           debug: true,
           callback: infoCallback,
           callbackError: errorCallback
@@ -924,6 +925,7 @@ function AntMedia() {
         reconnecting = !(publishReconnected && playReconnected);
         return;
       }
+      webRTCAdaptor.play(roomName, playToken, roomName, null, subscriberId, subscriberCode);
       console.log("publish started");
       //stream is being published
       webRTCAdaptor.enableStats(publishStreamId);
