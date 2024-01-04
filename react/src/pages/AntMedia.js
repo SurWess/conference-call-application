@@ -1515,7 +1515,6 @@ function AntMedia() {
     Object.entries(allParticipants).forEach(([key, value]) => {
       infoText += "- " + key + "\n";
     });
-    //infoText += JSON.stringify(allParticipants) + "\n";
     infoText += "----------------------\n";
     infoText += debugInfo;
 
