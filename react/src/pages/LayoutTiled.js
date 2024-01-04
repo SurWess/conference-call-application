@@ -140,8 +140,9 @@ function LayoutTiled(props) {
 
   return (
       <>
-        {videoCards()}
-        {conference.isFakeeh === false ? othersCard() : null}
+        {conference?.participants.length === 0 ? <p>There is no active publisher right now.</p> : null}
+        {conference?.participants.length !== 0 ? videoCards() : null}
+        {conference?.isFakeeh === false ? othersCard() : null}
       </>
     )
 };

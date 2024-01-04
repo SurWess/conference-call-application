@@ -106,7 +106,8 @@ function LayoutPinned (props) {
     <>
       {pinnedVideo()}
       <div id="unpinned-gallery">
-        {videoCards()}
+        {conference?.participants.length === 0 ? <p>There is no active publisher right now.</p> : null}
+        {conference?.participants.length !== 0 ? videoCards() : null}
         {conference.isFakeeh === false ? othersCard() : null}
       </div>
     </>
