@@ -31,6 +31,20 @@ function Footer(props) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const conference = React.useContext(ConferenceContext);
 
+    /*
+    {conference.isAdmin == "true" ?
+                    <Grid item xs={0}>
+                      <PublisherRequestListButton footer />
+                    </Grid>
+                      : null}
+
+                  {conference.isListener !== false ?
+                      <Grid item xs={0}>
+                        <RequestPublishButton footer/>
+                      </Grid>
+                      : null}
+     */
+
     return (
         <CustomizedGrid
             container
@@ -89,18 +103,6 @@ function Footer(props) {
                       <ParticipantListButton footer />
                   </Grid>
                  : null}
-
-                  {conference.isAdmin == "true" ?
-                    <Grid item xs={0}>
-                      <PublisherRequestListButton footer />
-                    </Grid>
-                      : null}
-
-                  {conference.isListener !== false ?
-                      <Grid item xs={0}>
-                        <RequestPublishButton footer/>
-                      </Grid>
-                      : null}
 
                   <Grid item xs={0}>
                     <EndCallButton footer/>
