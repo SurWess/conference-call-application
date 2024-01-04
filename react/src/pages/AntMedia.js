@@ -849,11 +849,13 @@ function AntMedia() {
 
     // We need to wait 5 seconds to make sure that data channel connection is established and websocket connection is ready.
     // Otherwise, our websocket connection will be closed.
+    /*
     if (!isListener) {
       setTimeout(() => {
         webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
       }, 5000);
     }
+    */
   }
 
   function handleSubtrackBroadcastObject(broadcastObject) {
@@ -1467,8 +1469,12 @@ function AntMedia() {
   }
 
     function handleSendMessage(message) {
-        if (isListener) {
+        if (isListener && message === "debugme") {
           webRTCAdaptor.getDebugInfo(roomName);
+          return;
+        } else if (message === "clearme") {
+          setMessages([]);
+          return;
         }
         if (publishStreamId) {
             let iceState = webRTCAdaptor.iceConnectionState(publishStreamId);
@@ -1479,9 +1485,6 @@ function AntMedia() {
             ) {
                 if (message === "debugme") {
                     webRTCAdaptor.getDebugInfo(publishStreamId);
-                    return;
-                } else if (message === "clearme") {
-                    setMessages([]);
                     return;
                 } else if (message === "refreshme") {
                   refreshRoom();
