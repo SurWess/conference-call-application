@@ -806,7 +806,7 @@ function AntMedia() {
     /*
     if (!isListener) {
       setTimeout(() => {
-        webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
+        webRTCAdaptor?.updateVideoTrackAssignments(publishStreamId, 0, 20);
       }, 5000);
     }
     */
@@ -1920,10 +1920,9 @@ function AntMedia() {
 
   function refreshRoom() {
     webRTCAdaptor?.getBroadcastObject(roomName);
-    //if (!isListener) {
+    if (!isListener) {
       webRTCAdaptor?.updateVideoTrackAssignments(publishStreamId, 0, 20);
-    //}
-    handleSetMaxVideoTrackCount(globals.maxVideoTrackCount+1);
+    }
   }
 
   function removeAllRemoteParticipants() {
