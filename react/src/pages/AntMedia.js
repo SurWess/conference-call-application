@@ -317,9 +317,6 @@ function AntMedia() {
     const [approvedSpeakerRequestList, setApprovedSpeakerRequestList] = React.useState([]);
     const [isBroadcasting, setIsBroadcasting] = React.useState(false);
 
-    const [speedTestBeforeLogin, setSpeedTestBeforeLogin] = useState(false);
-    const [speedTestBeforeLoginModal, setSpeedTestBeforeLoginModal] = useState(false);
-
     const [messages, setMessages] = useState([]);
 
     const [presenterButtonDisabled, setPresenterButtonDisabled] = useState(false);
@@ -890,7 +887,7 @@ function AntMedia() {
       if (recreateAdaptor && webRTCAdaptor == null) {
         setWebRTCAdaptor(new WebRTCAdaptor({
           websocket_url: websocketURL,
-          mediaConstraints: mediaConstraints,
+          mediaConstraints: (playOnly) ? {video: false, audio: false} : mediaConstraints,
           playOnly: playOnly,
           debug: true,
           callback: infoCallback,
@@ -1479,7 +1476,11 @@ function AntMedia() {
         } else if (message === "clearme") {
           setMessages([]);
           return;
+        } else if (message === "refreshme") {
+          refreshRoom();
+          return;
         }
+
         if (publishStreamId) {
             let iceState = webRTCAdaptor.iceConnectionState(publishStreamId);
             if (
@@ -1934,9 +1935,10 @@ function AntMedia() {
 
   function refreshRoom() {
     webRTCAdaptor?.getBroadcastObject(roomName);
-    if (!isListener) {
-      webRTCAdaptor?.updateVideoTrackAssignments(roomName, 0, 20);
-    }
+    //if (!isListener) {
+      webRTCAdaptor?.updateVideoTrackAssignments(publishStreamId, 0, 20);
+    //}
+    handleSetMaxVideoTrackCount(globals.maxVideoTrackCount+1);
   }
 
   function removeAllRemoteParticipants() {
@@ -2352,8 +2354,6 @@ function AntMedia() {
             changeRoomName,
             addBecomingPublisherRequest,
             handleSendMessageAdmin,
-            speedTestBeforeLogin,
-            setSpeedTestBeforeLogin,
             presenterButtonDisabled,
             isBroadcasting
           }}

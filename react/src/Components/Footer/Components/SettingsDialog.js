@@ -184,17 +184,6 @@ export function SettingsDialog(props) {
               </Hidden>
             </Grid>
           </Grid>
-          <Grid container sx={{ mt: 4 }}>
-            <Grid item xs={10}>
-              <Checkbox
-                  checked={conference.speedTestBeforeLogin}
-                  onChange={e => {conference.setSpeedTestBeforeLogin(e.target.checked)}}
-                  inputProps={{ 'aria-label': 'controlled' }}
-                  style={{ color: 'white' }}
-              />
-              Speed Test Before Join
-            </Grid>
-          </Grid>
         </Box>
       </DialogContent>
     </Dialog>
