@@ -710,6 +710,7 @@ function AntMedia() {
   }
 
   function reconnectionInProgress() {
+      console.log("entering reconnectionInProgress");
     //reset UI releated states
     removeAllRemoteParticipants();
 
@@ -930,6 +931,7 @@ function AntMedia() {
       setIsPublished(true);
       console.log("**** publish started:" + reconnecting);
       if (reconnecting) {
+        console.log("publishReconnected");
         publishReconnected = true;
         reconnecting = !(publishReconnected && playReconnected);
         return;
@@ -945,6 +947,7 @@ function AntMedia() {
     else if (info === "session_restored") {
       console.log("**** session_restored:" + reconnecting);
       if (reconnecting) {
+        console.log("sessionRestored after reconnecting state");
         publishReconnected = true;
         reconnecting = !(publishReconnected && playReconnected);
         return;
@@ -958,6 +961,7 @@ function AntMedia() {
       webRTCAdaptor.getBroadcastObject(roomName);
 
       if (reconnecting) {
+        console.log("playReconnected");
         playReconnected = true;
         reconnecting = !(publishReconnected && playReconnected);
         return;
@@ -1936,6 +1940,7 @@ function AntMedia() {
   }
 
   function removeAllRemoteParticipants() {
+    console.log("entering removeAllRemoteParticipants");
     let newVideoTrack = {
       id: "localVideo",
       videoLabel: "localVideo",
