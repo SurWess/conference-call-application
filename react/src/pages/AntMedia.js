@@ -824,7 +824,8 @@ function AntMedia() {
             ?.videoLabel
             ? participants.find((p) => p.streamId === broadcastObject.streamId).videoLabel
             : "";
-          pinVideo(broadcastObject.streamId, videoLab);
+          // Removing auto pin
+          //pinVideo(broadcastObject.streamId, videoLab);
         }
       }
     }
@@ -1677,7 +1678,8 @@ function AntMedia() {
           assignVideoToStream(videoLab, eventStreamId);
         }
 
-        pinVideo(videoLab, videoLab);
+        // Removing auto pin
+        //pinVideo(videoLab, videoLab);
         setScreenSharedVideoId(eventStreamId);
         webRTCAdaptor.getBroadcastObject(eventStreamId);
       }
