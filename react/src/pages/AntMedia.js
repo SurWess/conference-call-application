@@ -306,7 +306,6 @@ function AntMedia() {
   const [localVideo, setLocalVideoLocal] = React.useState(null);
 
   const [webRTCAdaptor, setWebRTCAdaptor] = React.useState();
-  const [webRTCAdaptorAdminOnly, setWebRTCAdaptorAdminOnly] = React.useState();
   const [initialized, setInitialized] = React.useState(false);
   const [recreateAdaptor, setRecreateAdaptor] = React.useState(true);
   const [closeScreenShare, setCloseScreenShare] = React.useState(false);
@@ -588,54 +587,11 @@ function AntMedia() {
                                 streamId: commandList[2],
                                 eventType: commandList[3]
                             }));
-                    } else if (commandList[1] === "listener_room") {
-                        // TODO: Move it to REST API
-                        webRTCAdaptorAdminOnly.sendData(publishStreamId + "listener",
-                            JSON.stringify({
-                                streamId: commandList[2],
-                                eventType: commandList[3]
-                            }));
                     }
-                    return;
                 }
             }
         }
     }
-
-    useEffect(() => {
-        async function createWebRTCAdaptorAdminOnly() {
-            //here we check if audio or video device available and wait result
-            //according to the result we modify mediaConstraints
-            await checkDevices();
-            if (recreateAdaptor && webRTCAdaptorAdminOnly == null && admin === "true") {
-                setWebRTCAdaptorAdminOnly(new WebRTCAdaptor({
-                    websocket_url: websocketURL,
-                    mediaConstraints: {video: false, audio: false},
-                    onlyDataChannel: true,
-                    debug: true,
-                    callback: (info, obj) => {
-                        if (info === "data_received") {
-                            try {
-                                let notificationEvent = JSON.parse(obj.data);
-                                if (notificationEvent != null && typeof notificationEvent == "object") {
-                                    let eventStreamId = notificationEvent.streamId;
-                                    let eventType = notificationEvent.eventType;
-                                    if (eventType === "REQUEST_PUBLISH" && admin == "true") {
-                                        console.log("webrtc publish request is received from attendee with streamId: " + eventStreamId);
-                                        addBecomingPublisherRequest(eventStreamId);
-                                    }
-                                }
-                            } catch (e) {}
-                        }
-                    },
-                    callbackError: function (error, message) {},
-                }))
-
-                setRecreateAdaptor(false);
-            }
-        }
-        createWebRTCAdaptorAdminOnly();
-    }, [recreateAdaptor]);  // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         checkAndUpdateVideoAudioSources();
@@ -934,6 +890,9 @@ function AntMedia() {
         return;
       }
       webRTCAdaptor.play(roomName, playToken, roomName, null, subscriberId, subscriberCode);
+      if (isAdmin == "true") {
+        createListenerRoomIfNotExists();
+      }
       console.log("publish started");
       //stream is being published
       webRTCAdaptor.enableStats(publishStreamId);
@@ -1110,6 +1069,41 @@ function AntMedia() {
     console.log("***** " + error)
 
   };
+
+  function createListenerRoomIfNotExists() {
+    const baseUrl = restBaseUrl;
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ streamId: roomName + "listener", status: "broadcasting" })
+    };
+    fetch(baseUrl + "/rest/v2/broadcasts/create", requestOptions)
+      .then((response) => { return response.json(); })
+      .then((data) => {
+        if (data.success) {
+          console.log("listener room created.");
+        } else {
+          console.log("listener room is already exist.");
+        }
+      });
+  }
+
+  function deleteListenerRoom() {
+    const baseUrl = restBaseUrl;
+    const requestOptions = {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    };
+    fetch(baseUrl + "/rest/v2/broadcasts/" + roomName + "listener", requestOptions)
+      .then((response) => { return response.json(); })
+      .then((data) => {
+        if (data.success) {
+          console.log("listener room is deleted.");
+        } else {
+          console.log("listener room is not deleted.");
+        }
+      });
+  }
 
   window.makeFullScreen = makeFullScreen;
 
@@ -1428,10 +1422,6 @@ function AntMedia() {
       roomName = roomName + "listener";
       //webRTCAdaptor.changeRoomName(newRoom);
       joinRoom(roomName, publishStreamId, "legacy");
-    }
-    else if (webRTCAdaptorAdminOnly != null && admin === "true") {
-      console.log("admin left the room");
-      webRTCAdaptorAdminOnly.stop(room + "listener");
     }
   }, [isPublished, isPlayStarted]);  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1865,11 +1855,6 @@ function AntMedia() {
     webRTCAdaptor?.stop(publishStreamId);
     webRTCAdaptor?.stop(roomName);
 
-    if (webRTCAdaptorAdminOnly != null && admin == "true") {
-      webRTCAdaptorAdminOnly?.stop(roomName + "listener");
-      webRTCAdaptorAdminOnly?.stop(publishStreamId + "admin");
-    }
-
     // add mechanism to listen play finished event publish finished event
     try {
       webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
@@ -2006,19 +1991,6 @@ function AntMedia() {
       roomName,
       JSON.stringify(userStatusMetadata)
     );
-
-    if (admin) {
-      let adminStatusMetadata = {isMicMuted: true, isCameraOn: false, isScreenShared: false, isPlayOnly: true};
-        webRTCAdaptorAdminOnly.publish(
-            publishStreamId + "admin",
-            tokenPublishAdmin,
-            subscriberId,
-            subscriberCode,
-            "Host",
-            roomName + "listener",
-            JSON.stringify(adminStatusMetadata)
-        );
-    }
   }
 
   function handlePlayVideo(obj) {
@@ -2355,7 +2327,8 @@ function AntMedia() {
             addBecomingPublisherRequest,
             handleSendMessageAdmin,
             presenterButtonDisabled,
-            isBroadcasting
+            isBroadcasting,
+            deleteListenerRoom
           }}
         >
           <SnackbarProvider

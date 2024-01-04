@@ -58,6 +58,7 @@ function EndCallButton({ footer, ...props }) {
       conference.makeListenerAgain(approvedSpeaker)
       console.log("approvedSpeaker : " + approvedSpeaker + " roomname: " + conference.roomName);
     }
+    conference.deleteListenerRoom();
     //delete streams from speaker room
     conference.setPresenters([]);
     setOpenConfirmationDialog(false);
