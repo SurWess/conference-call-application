@@ -248,6 +248,8 @@ function AntMedia() {
 
   const [isAdmin, setIsAdmin] = useState(admin);
 
+  const [videoTrackAssignmentListReceived, setVideoTrackAssignmentListReceived] = useState(false);
+
   const [isFakeeh, setIsFakeeh] = useState(true);
 
   const [reactions] = useState({
@@ -715,6 +717,19 @@ function AntMedia() {
     }
   }
 
+  // After the pr below merged, we can remove this function and
+  // use the one in the webrtc_adaptor.js
+  // https://github.com/ant-media/StreamApp/pull/427
+  // Mustafa 06.01.2024
+  function getVideoTrackAssignments(streamId) {
+    var jsCmd = {
+      streamId: streamId,
+      command: "getVideoTrackAssignmentsCommand"
+    };
+
+    webRTCAdaptor.webSocketAdaptor.send(JSON.stringify(jsCmd));
+  }
+
   function addFakeParticipant() {
     let suffix = "fake" + fakeParticipantCounter;
     let tempCount = fakeParticipantCounter + 1;
@@ -976,8 +991,7 @@ function AntMedia() {
 
     } else if (info === "debugInfo") {
       handleDebugInfo(obj.debugInfo);
-    }
-    else if (info === "ice_connection_state_changed") {
+    } else if (info === "ice_connection_state_changed") {
       console.log("iceConnectionState Changed: ", JSON.stringify(obj))
       var iceState = obj.state;
       if (iceState === "failed" || iceState === "disconnected" || iceState === "closed") {
@@ -991,8 +1005,23 @@ function AntMedia() {
         }, 5000);
 
       }
+    } else if (info === "pong") {
+      // This is a workaround for the video track assignment list issue. We should remove this workaround when the issue is fixed on the server side.
+      // When the publisher or play only user joins the room, we send the video track assignment list from the server
+      // to the client via data channel. But sometimes, the client does not receive the video track assignment list.
+      // This is happening because of the data channel connection is not established yet.
+      // When we receive pong message, we check if the video track assignment list came at least once.
+      // If it is not received, we send a request to get the video track assignment list.
+      // We use pong message because it is sent periodically.
+      // Mustafa B
+      if (Object.keys(allParticipants).length !== 0 && videoTrackAssignmentListReceived === false) {
+        // If allParticipants is not empty but video track assignment is not received,
+        // we send a request to get the video track assignment list.
+        getVideoTrackAssignments(roomName);
+        console.log("getVideoTrackAssignments is called manually!");
+      }
     }
-  };
+  }
 
   function errorCallback(error, message) {
     //some of the possible errors, NotFoundError, SecurityError,PermissionDeniedError
@@ -1728,6 +1757,8 @@ function AntMedia() {
       else if (eventType === "VIDEO_TRACK_ASSIGNMENT_LIST") {
         console.debug("VIDEO_TRACK_ASSIGNMENT_LIST -> ", obj);
 
+        setVideoTrackAssignmentListReceived(true);
+
         let videoTrackAssignments = notificationEvent.payload;
 
         let temp = participants;
@@ -1922,9 +1953,7 @@ function AntMedia() {
 
   function refreshRoom() {
     webRTCAdaptor?.getBroadcastObject(roomName);
-    if (!isListener) {
-      webRTCAdaptor?.updateVideoTrackAssignments(publishStreamId, 0, 20);
-    }
+    getVideoTrackAssignments(roomName);
   }
 
   function removeAllRemoteParticipants() {
