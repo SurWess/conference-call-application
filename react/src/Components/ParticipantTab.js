@@ -6,6 +6,7 @@ import Button from "@mui/material/Button";
 import { styled } from "@mui/material/styles";
 import { SvgIcon } from "./SvgIcon";
 import { ConferenceContext } from "pages/AntMedia";
+import {CircularProgress} from "@mui/material";
 
 const ParticipantName = styled(Typography)(({ theme }) => ({
   color: "black",
@@ -44,7 +45,6 @@ function ParticipantTab(props) {
             </PinBtn>
           ) : (
             <PinBtn
-              disabled={conference?.presenterButtonDisabled}
               sx={{ minWidth: "unset", pt: 1, pb: 1 }}
               onClick={() => {
                 if (streamId === "localVideo") {
@@ -77,11 +77,13 @@ function ParticipantTab(props) {
                     }
                   }
               >
-                <SvgIcon size={28} name="unpresenter" color="black" />
+                { conference?.presenterButtonStreamIdInProcess === streamId ? <CircularProgress size={28} /> :
+                <SvgIcon size={28} name="unpresenter" color="black" />}
               </PinBtn>
           ) : null}
           {(streamId === "localVideo" ? !conference.presenters.includes(conference.publishStreamId) : !conference.presenters.includes(streamId) ) && ( !conference.approvedSpeakerRequestList.includes(streamId) ) && conference.isAdmin == "true" ?(
               <PinBtn
+                  disabled={conference?.presenterButtonDisabled}
                   sx={{ minWidth: "unset", pt: 1, pb: 1 }}
                   onClick={() => {
                     let tempStreamId = streamId;
@@ -93,7 +95,8 @@ function ParticipantTab(props) {
                   }
               >
                 {/* this icon for publish speaker */}
-                <SvgIcon size={28} name="presenter" color="black" />
+                { conference?.presenterButtonStreamIdInProcess === streamId ? <CircularProgress size={28} /> :
+                  <SvgIcon size={28} name="presenter" color="black" />}
               </PinBtn>
           ) : null}
           {conference.approvedSpeakerRequestList.includes(streamId) && conference.isAdmin == "true"  && assignedVideoCardId !== 'localVideo' ?(

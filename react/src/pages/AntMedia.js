@@ -180,7 +180,6 @@ if (!tokenPublish) {
   tokenPublish = getUrlParameter("tokenPublish");
 }
 
-
 var roomOfStream = [];
 
 var audioListenerIntervalJob = null;
@@ -321,20 +320,15 @@ function AntMedia() {
     const [messages, setMessages] = useState([]);
 
     const [presenterButtonDisabled, setPresenterButtonDisabled] = useState(false);
+    // presenterButtonStreamIdInProcess keeps the streamId of the participant who is in the process of becoming presenter/unpresenter.
+    const [presenterButtonStreamIdInProcess, setPresenterButtonStreamIdInProcess] = useState(null);
 
     // video send resolution for publishing
     // possible values: "auto", "highDefinition", "standartDefinition", "lowDefinition"
     const [videoSendResolution, setVideoSendResolution] = React.useState(localStorage.getItem("videoSendResolution") ? localStorage.getItem("videoSendResolution") : "auto");
 
-    React.useEffect(() => {
-      if(presenterButtonDisabled === true) {
-        setTimeout(() => {
-          setPresenterButtonDisabled(false);
-        }, 2000);
-      }
-    }, [presenterButtonDisabled]);
-
     function makeParticipantPresenter(id) {
+        setPresenterButtonStreamIdInProcess(id);
         setPresenterButtonDisabled(true);
         let streamId = id;
         if (streamId === 'localVideo' && publishStreamId !== null) {
@@ -352,11 +346,12 @@ function AntMedia() {
             headers: { 'Content-Type': 'application/json' },
         };
 
-        fetch( baseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/add?streamId=" + streamId, requestOptions0).then(
-            () => {
+        fetch( baseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/add?streamId=" + streamId, requestOptions0)
+          .then(() => {
                 fetch(baseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + streamId, requestOptions1)
-                    .then((response) => { return response.json(); })
-                    .then((data) => {
+                  .then((response) => { return response.json(); })
+                  .then((data) => {
+                      setPresenterButtonStreamIdInProcess(null);
                       setPresenterButtonDisabled(false);
                         presenters.push(streamId);
                         var newPresenters = [...presenters];
@@ -399,9 +394,18 @@ function AntMedia() {
                                 }
 
                             });
-                    });
-            }
-        )
+                    })
+                  .catch(error => {
+                    console.error(error);
+                    setPresenterButtonStreamIdInProcess(null);
+                    setPresenterButtonDisabled(false);
+                  });
+            })
+          .catch(error => {
+            console.error(error);
+            setPresenterButtonStreamIdInProcess(null);
+            setPresenterButtonDisabled(false);
+          });
     }
 
     function rejectSpeakerRequest(streamId) {
@@ -507,6 +511,7 @@ function AntMedia() {
     }
 
     function makeParticipantUndoPresenter(id) {
+      setPresenterButtonStreamIdInProcess(id);
       setPresenterButtonDisabled(true);
         let streamId = id;
         if (streamId === 'localVideo') {
@@ -523,7 +528,9 @@ function AntMedia() {
             headers: { 'Content-Type': 'application/json' },
         };
 
-        fetch(baseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + streamId, requestOptions2).then((response) => response.json()).then((result) => {
+        fetch(baseUrl + "/rest/v2/broadcasts/" + roomName + "listener/subtrack?id=" + streamId, requestOptions2)
+          .then((response) => response.json())
+          .then((result) => {
 
             console.log("make participant undo presenter result: " + result.success);
 
@@ -537,11 +544,14 @@ function AntMedia() {
                 })
             };
 
-            fetch(baseUrl + "/rest/v2/broadcasts/" + streamId, options).then((response) => response.json()).then((result) =>
-            {
+            fetch(baseUrl + "/rest/v2/broadcasts/" + streamId, options)
+              .then((response) => response.json())
+              .then((result) => {
                 console.log("update subtrack result: " + result.success + " for stream: " + streamId);
 
-                fetch( baseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + streamId, requestOptions0).then(() => {
+                fetch( baseUrl+ "/rest/v2/broadcasts/conference-rooms/" + roomName + "listener/delete?streamId=" + streamId, requestOptions0)
+                  .then(() => {
+                  setPresenterButtonStreamIdInProcess(null);
                   setPresenterButtonDisabled(false);
                     presenters.splice(presenters.indexOf(streamId), 1);
                     var newPresenters = [...presenters];
@@ -566,10 +576,24 @@ function AntMedia() {
                         body: JSON.stringify(command2)
                     };
                     fetch( baseUrl+ "/rest/v2/broadcasts/" + roomName + "/data", requestOptions2).then(() => {});
+                })
+                  .catch(error => {
+                    console.error(error);
+                  setPresenterButtonStreamIdInProcess(null);
+                  setPresenterButtonDisabled(false);
                 });
-            });
+            })
+              .catch(error => {
+                console.error(error);
+                setPresenterButtonStreamIdInProcess(null);
+                setPresenterButtonDisabled(false);
+              });
 
-
+        })
+          .catch(error => {
+          console.error(error);
+          setPresenterButtonStreamIdInProcess(null);
+          setPresenterButtonDisabled(false);
         });
     }
 
@@ -727,7 +751,7 @@ function AntMedia() {
       command: "getVideoTrackAssignmentsCommand"
     };
 
-    webRTCAdaptor.webSocketAdaptor.send(JSON.stringify(jsCmd));
+    webRTCAdaptor?.webSocketAdaptor.send(JSON.stringify(jsCmd));
   }
 
   function addFakeParticipant() {
@@ -1014,11 +1038,13 @@ function AntMedia() {
       // If it is not received, we send a request to get the video track assignment list.
       // We use pong message because it is sent periodically.
       // Mustafa B
-      if (Object.keys(allParticipants).length !== 0 && videoTrackAssignmentListReceived === false) {
+      if ((isListener === true && Object.keys(allParticipants).length > 0 && videoTrackAssignmentListReceived === false)
+        || (isListener === false && Object.keys(allParticipants).length > 1 && videoTrackAssignmentListReceived === false)) {
         // If allParticipants is not empty but video track assignment is not received,
         // we send a request to get the video track assignment list.
         getVideoTrackAssignments(roomName);
         console.log("getVideoTrackAssignments is called manually!");
+
       }
     }
   }
@@ -2358,7 +2384,8 @@ function AntMedia() {
             handleSendMessageAdmin,
             presenterButtonDisabled,
             isBroadcasting,
-            deleteListenerRoom
+            deleteListenerRoom,
+            presenterButtonStreamIdInProcess
           }}
         >
           <SnackbarProvider
