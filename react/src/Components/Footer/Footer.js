@@ -15,7 +15,6 @@ import TimeZone from "./Components/TimeZone";
 import PublisherRequestListButton from "./Components/PublisherRequestListButton";
 import { ConferenceContext } from 'pages/AntMedia';
 import ReactionsButton from "./Components/ReactionsButton";
-import MessageButton from "./Components/MessageButton";
 
 const CustomizedGrid = styled(Grid)(({ theme }) => ({
   backgroundColor: theme.palette.green[80],
@@ -93,10 +92,6 @@ function Footer(props) {
                     <ReactionsButton footer/>
                   </Grid>
                     : null}
-
-                  <Grid item xs={0}>
-                    <MessageButton footer/>
-                  </Grid>
 
                   {conference.isListener === false ?
                   <Grid item xs={0}>

@@ -1611,7 +1611,7 @@ function AntMedia() {
         webRTCAdaptor.getBroadcastObject(eventStreamId);
       }
       else if (eventType === "MESSAGE_RECEIVED") {
-        if(notificationEvent.senderId === publishStreamId/* || isFakeeh === true*/) {
+        if(notificationEvent.senderId === publishStreamId || isFakeeh === true) {
           return;
         }
         calculate_scroll_height();
