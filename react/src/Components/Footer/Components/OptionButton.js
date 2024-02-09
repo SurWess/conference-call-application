@@ -121,6 +121,13 @@ function OptionButton({ footer, ...props }) {
             </MenuItem>
                     : null}
 
+            <MenuItem onClick={() => { conference.handleEffectsOpen(!conference.effectsDrawerOpen); handleClose(); }}>
+              <ListItemIcon>
+                <SvgIcon size={36} name={"background-replacement"} color={"white"} />
+              </ListItemIcon>
+              <ListItemText>{t("Virtual Effects")}</ListItemText>
+            </MenuItem>
+
             <MenuItem
                 component={"a"}
                 href="https://elearning.fakeeh.care/page/e-learning-platform-support-ticket.html"

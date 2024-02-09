@@ -42,5 +42,8 @@
   "Link copied":"Enlace copiado",
   "Resolution":"Resolución",
   "Copy meeting link":"Copiar link de la sala",
-  "Camera is disabled while screensharing":"La camara se desactiva mientras compartes pantalla"
+  "Camera is disabled while screensharing":"La camara se desactiva mientras compartes pantalla",
+  "Virtual Effects": "Efectos virtuales",
+  "Image is uploaded successfully.": "Imagen subida con éxito.",
+  "Image size cannot exceed more than 1MB.": "El tamaño de la imagen no puede exceder más de 1 MB."
 }

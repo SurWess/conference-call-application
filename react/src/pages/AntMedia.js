@@ -16,6 +16,7 @@ import { VideoEffect } from "@antmedia/webrtc_adaptor";
 import { getUrlParameter } from "@antmedia/webrtc_adaptor";
 import { SvgIcon } from "../Components/SvgIcon";
 import ParticipantListDrawer from "../Components/ParticipantListDrawer";
+import EffectsDrawer from "../Components/EffectsDrawer";
 
 import {getRoomNameAttribute, getRootAttribute, getWebSocketURLAttribute} from "../utils.js";
 import floating from "../external/floating.js";
@@ -202,6 +203,9 @@ function AntMedia() {
 
   // drawerOpen for participant list components.
   const [participantListDrawerOpen, setParticipantListDrawerOpen] = useState(false);
+
+  // drawerOpen for effects components.
+  const [effectsDrawerOpen, setEffectsDrawerOpen] = useState(false);
 
   const [publisherRequestListDrawerOpen, setPublisherRequestListDrawerOpen] = useState(false);
 
@@ -1496,6 +1500,7 @@ function AntMedia() {
     if (open) {
       setParticipantListDrawerOpen(false);
       setPublisherRequestListDrawerOpen(false);
+      setEffectsDrawerOpen(false);
     }
   }
 
@@ -1504,6 +1509,7 @@ function AntMedia() {
     if (open) {
       setMessageDrawerOpen(false);
       setPublisherRequestListDrawerOpen(false);
+      setEffectsDrawerOpen(false);
     }
   }
 
@@ -1512,6 +1518,16 @@ function AntMedia() {
     if (open) {
       setMessageDrawerOpen(false);
       setParticipantListDrawerOpen(false);
+      setEffectsDrawerOpen(false);
+    }
+  }
+
+  function handleEffectsOpen(open) {
+    setEffectsDrawerOpen(open);
+    if (open) {
+      setMessageDrawerOpen(false);
+      setParticipantListDrawerOpen(false);
+      setPublisherRequestListDrawerOpen(false);
     }
   }
 
@@ -2081,20 +2097,32 @@ function AntMedia() {
     }
   }
 
-  function setVirtualBackgroundImage(imageUrl) {
+  function setAndEnableVirtualBackgroundImage(imageUrl) {
     let virtualBackgroundImage = document.createElement("img");
     virtualBackgroundImage.id = "virtualBackgroundImage";
     virtualBackgroundImage.style.visibility = "hidden";
     virtualBackgroundImage.alt = "virtual-background";
 
+    console.log("Virtual background image url: " + imageUrl);
     if (imageUrl !== undefined && imageUrl !== null && imageUrl !== "") {
       virtualBackgroundImage.src = imageUrl;
     } else {
-      virtualBackgroundImage.src = "virtual-background.png";
+      virtualBackgroundImage.src = "virtual-background0.png";
     }
 
-    setVirtualBackground(virtualBackgroundImage);
-    webRTCAdaptor.setBackgroundImage(virtualBackgroundImage);
+    virtualBackgroundImage.onload = () => {
+      console.log("Virtual background image is loaded");
+      setVirtualBackground(virtualBackgroundImage);
+      webRTCAdaptor.setBackgroundImage(virtualBackgroundImage);
+
+      webRTCAdaptor.enableEffect(VideoEffect.VIRTUAL_BACKGROUND).then(() => {
+        console.log("Effect: " + VideoEffect.VIRTUAL_BACKGROUND + " is enabled");
+        setIsVideoEffectRunning(true);
+      }).catch(err => {
+        console.error("Effect: " + VideoEffect.VIRTUAL_BACKGROUND + " is not enabled. Error is " + err);
+        setIsVideoEffectRunning(false);
+      });
+    };
   }
 
   function handleBackgroundReplacement(option) {
@@ -2103,16 +2131,21 @@ function AntMedia() {
     if (option === "none") {
       effectName = VideoEffect.NO_EFFECT;
       setIsVideoEffectRunning(false);
-    }
-    else if (option === "blur") {
+    } else if (option === "slight-blur") {
+      webRTCAdaptor?.setBlurEffectRange(3, 4);
+      effectName = VideoEffect.BLUR_BACKGROUND;
+      setIsVideoEffectRunning(true);
+    } else if (option === "blur") {
+      webRTCAdaptor?.setBlurEffectRange(6, 8);
       effectName = VideoEffect.BLUR_BACKGROUND;
       setIsVideoEffectRunning(true);
     }
     else if (option === "background") {
       if (virtualBackground === null) {
-        setVirtualBackgroundImage(null);
+        setAndEnableVirtualBackgroundImage(null);
+        return;
       }
-      effectName = VideoEffect.VIRTUAL_BACKGROUND
+      effectName = VideoEffect.VIRTUAL_BACKGROUND;
       setIsVideoEffectRunning(true);
     }
     webRTCAdaptor.enableEffect(effectName).then(() => {
@@ -2385,7 +2418,10 @@ function AntMedia() {
             presenterButtonDisabled,
             isBroadcasting,
             deleteListenerRoom,
-            presenterButtonStreamIdInProcess
+            presenterButtonStreamIdInProcess,
+            effectsDrawerOpen,
+            handleEffectsOpen,
+            setAndEnableVirtualBackgroundImage
           }}
         >
           <SnackbarProvider
@@ -2407,6 +2443,7 @@ function AntMedia() {
                 <MeetingRoom />
                 <MessageDrawer />
                 <ParticipantListDrawer />
+                <EffectsDrawer/>
                 <PublisherRequestListDrawer />
               </>
             )}
