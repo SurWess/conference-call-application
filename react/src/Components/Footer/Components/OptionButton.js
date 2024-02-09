@@ -121,12 +121,14 @@ function OptionButton({ footer, ...props }) {
             </MenuItem>
                     : null}
 
+            {conference.isListener === false ?
             <MenuItem onClick={() => { conference.handleEffectsOpen(!conference.effectsDrawerOpen); handleClose(); }}>
               <ListItemIcon>
                 <SvgIcon size={36} name={"background-replacement"} color={"white"} />
               </ListItemIcon>
               <ListItemText>{t("Virtual Effects")}</ListItemText>
             </MenuItem>
+              : null}
 
             <MenuItem
                 component={"a"}
