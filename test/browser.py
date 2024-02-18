@@ -105,6 +105,9 @@ class Browser:
 
   def get_wait(self):
     return WebDriverWait(self.driver, 15)
+  
+  def get_wait(self, timeout):
+    return WebDriverWait(self.driver, timeout)
 
   def close(self):
     self.driver.close()
