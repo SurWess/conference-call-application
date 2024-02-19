@@ -86,7 +86,7 @@ class TestTestFakeehScenario(unittest.TestCase):
     add_button = self.chrome.get_element_by_id("add-presenter-"+presenter)
     self.chrome.click_element(add_button)
 
-  def remove_presenter_to_listener_room(self, presenter):
+  def remove_presenter_from_listener_room(self, presenter):
     remove_button = self.chrome.get_element_by_id("remove-presenter-"+presenter)
     self.chrome.click_element(remove_button)
 
@@ -191,7 +191,17 @@ class TestTestFakeehScenario(unittest.TestCase):
 
     wait.until(lambda x: len(self.get_participants()) == 1)
 
-  
+
+    # switch to admin and remove presenter from listener room
+    self.chrome.switch_to_tab(handle_admin)
+
+    self.remove_presenter_from_listener_room(presenterId)
+
+    # switch to playerA and check if presenter is removed from listener room
+    self.chrome.switch_to_tab(handle_player_A)
+
+    wait.until(lambda x: len(self.get_participants()) == 0)
+
 
     self.chrome.close_all()
 
