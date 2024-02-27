@@ -1,8 +1,6 @@
 # Open Source Video Conferencing Application
 
-This is the Github repository for Ant Media Video Conferencing application. It includes the frontend, all APIs and user interface to build large-scale, ultra-low latency video and audio conferencing and webinars. This gives companies a headstart when it comes to building their own branded tool which can scale to hundreds of thousands of viewers at the same time.
-
-This application requires Ant Media Enterprise Edition, available from [Ant Media](https://antmedia.io).
+This is the Github repository for WebRTC Video Conferencing application. It includes the frontend, all APIs and user interface to build large-scale, ultra-low latency video and audio conferencing and webinars. This gives companies a headstart when it comes to building their own branded tool which can scale to hundreds of thousands of viewers at the same time.
 
 Thanks to its non-restrictive license, you can: 
 
